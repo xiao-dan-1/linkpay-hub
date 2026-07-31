@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { AdminGuard, UserGuard } from '../auth/RouteGuards'
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { InvalidStudioPage } from '../pages/InvalidStudioPage'
@@ -12,10 +12,6 @@ import { AdminDashboard } from '../pages/admin/AdminDashboard'
 import { AdminTasksPage } from '../pages/admin/AdminTasksPage'
 import { AdminUsersPage } from '../pages/admin/AdminUsersPage'
 import { AdminStudioPage } from '../pages/admin/AdminStudioPage'
-
-function Placeholder({ title }: { title: string }) {
-  return <main className="app-shell"><h1>{title}</h1></main>
-}
 
 export function AppRoutes() {
   return (

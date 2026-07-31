@@ -1,5 +1,5 @@
 import { ExternalLink, X } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
 import type { Task, User } from '../domain/models'
 import { StatusBadge } from './StatusBadge'
@@ -16,13 +16,22 @@ export function TaskDetails({
   actions?: ReactNode
   onClose: () => void
 }) {
+  const openerRef = useRef<HTMLElement | null>(null)
+
   useEffect(() => {
     if (!task) return
+    openerRef.current = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const listener = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', listener)
-    return () => document.removeEventListener('keydown', listener)
+    return () => {
+      document.removeEventListener('keydown', listener)
+      document.body.style.overflow = previousOverflow
+      openerRef.current?.focus()
+    }
   }, [onClose, task])
 
   if (!task) return null

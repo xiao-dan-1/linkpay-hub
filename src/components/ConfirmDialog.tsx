@@ -18,12 +18,27 @@ export function ConfirmDialog({
   onCancel: () => void
 }) {
   const cancelRef = useRef<HTMLButtonElement>(null)
+  const openerRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
-    if (open) {
-      cancelRef.current?.focus()
+    if (!open) return
+
+    openerRef.current = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    cancelRef.current?.focus()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCancel()
     }
-  }, [open])
+    document.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
+      openerRef.current?.focus()
+    }
+  }, [onCancel, open])
 
   if (!open) {
     return null
@@ -42,9 +57,6 @@ export function ConfirmDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') onCancel()
-        }}
       >
         <h2 id="confirm-title">{title}</h2>
         <p>{description}</p>
