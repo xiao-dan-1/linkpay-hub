@@ -17,7 +17,7 @@ describe('AdminTasksPage', () => {
 
     await userEvent.selectOptions(screen.getByLabelText('状态筛选'), 'failed')
 
-    expect(screen.getByText('https://example.com/failed')).toBeInTheDocument()
+    expect(await screen.findByText('https://example.com/failed')).toBeInTheDocument()
     expect(screen.queryByText('https://example.com/success')).not.toBeInTheDocument()
   })
 })

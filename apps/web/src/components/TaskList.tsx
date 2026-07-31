@@ -29,6 +29,7 @@ export function TaskList({
     () => new Map(users.map((user) => [user.id, user.username])),
     [users],
   )
+  const showUsers = users.length > 0 || tasks.some((task) => Boolean(task.username))
 
   if (!tasks.length) {
     return (
@@ -46,7 +47,7 @@ export function TaskList({
           <tr>
             <th>任务编号</th>
             <th>链接</th>
-            {users.length ? <th>提交用户</th> : null}
+            {showUsers ? <th>提交用户</th> : null}
             <th>提交时间</th>
             <th>状态</th>
             <th><span className="sr-only">操作</span></th>
@@ -61,7 +62,7 @@ export function TaskList({
                   <span>{task.url}</span><ExternalLink size={14} aria-hidden="true" />
                 </a>
               </td>
-              {users.length ? <td data-label="提交用户">{userNames.get(task.userId) ?? '未知用户'}</td> : null}
+              {showUsers ? <td data-label="提交用户">{task.username ?? (task.userId ? userNames.get(task.userId) : undefined) ?? '未知用户'}</td> : null}
               <td data-label="提交时间">{formatDate(task.submittedAt)}</td>
               <td data-label="状态"><StatusBadge status={task.status} /></td>
               <td className="task-action-cell">

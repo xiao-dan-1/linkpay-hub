@@ -1,63 +1,80 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { PropsWithChildren } from 'react'
-import type { Admin, User } from '../domain/models'
-import { useData } from '../data/DataContext'
-import { sessionStore } from './session'
+import type { SessionPrincipal } from '@studio/contracts'
+import * as authApi from '../api/auth'
+
+type UserPrincipal = SessionPrincipal & {
+  role: 'user'
+  username: string
+  studioId: string
+}
+
+type AdminPrincipal = SessionPrincipal & {
+  role: 'admin'
+  username: string
+}
 
 type AuthValue = {
-  user?: User
-  admin?: Admin
-  loginUser: (username: string, password: string) => void
-  logoutUser: () => void
-  loginAdmin: (username: string, password: string) => void
-  logoutAdmin: () => void
-  setRegisteredUser: (user: User) => void
+  user?: UserPrincipal
+  admin?: AdminPrincipal
+  loading: boolean
+  loginUser: (username: string, password: string) => Promise<void>
+  registerUser: (registrationCode: string, username: string, password: string) => Promise<void>
+  logoutUser: () => Promise<void>
+  loginAdmin: (username: string, password: string) => Promise<void>
+  logoutAdmin: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthValue | null>(null)
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const { repository, version } = useData()
-  const [userId, setUserId] = useState(sessionStore.getUserId)
-  const [adminId, setAdminId] = useState(sessionStore.getAdminId)
-  const state = repository.getState()
-  const user = state.users.find((item) => item.id === userId && item.enabled)
-  const admin = state.admins.find((item) => item.id === adminId)
+  const [user, setUser] = useState<UserPrincipal>()
+  const [admin, setAdmin] = useState<AdminPrincipal>()
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    Promise.allSettled([authApi.getUserSession(), authApi.getAdminSession()])
+      .then(([userResult, adminResult]) => {
+        if (!active) return
+        if (userResult.status === 'fulfilled' && userResult.value.role === 'user') {
+          setUser(userResult.value as UserPrincipal)
+        }
+        if (adminResult.status === 'fulfilled' && adminResult.value.role === 'admin') {
+          setAdmin(adminResult.value as AdminPrincipal)
+        }
+      })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [])
 
   const value = useMemo<AuthValue>(
     () => ({
       user,
       admin,
-      loginUser(username, password) {
-        const matched = repository.authenticateUser(username, password)
-        if (!matched) {
-          throw new Error('账号、密码错误或账号已停用')
-        }
-        sessionStore.setUserId(matched.id)
-        setUserId(matched.id)
+      loading,
+      async loginUser(username, password) {
+        const principal = await authApi.loginUser(username, password)
+        setUser(principal as UserPrincipal)
       },
-      logoutUser() {
-        sessionStore.setUserId(null)
-        setUserId(null)
+      async registerUser(registrationCode, username, password) {
+        const principal = await authApi.registerUser(registrationCode, username, password)
+        setUser(principal as UserPrincipal)
       },
-      loginAdmin(username, password) {
-        const matched = repository.authenticateAdmin(username, password)
-        if (!matched) {
-          throw new Error('管理员账号或密码错误')
-        }
-        sessionStore.setAdminId(matched.id)
-        setAdminId(matched.id)
+      async logoutUser() {
+        await authApi.logoutUser()
+        setUser(undefined)
       },
-      logoutAdmin() {
-        sessionStore.setAdminId(null)
-        setAdminId(null)
+      async loginAdmin(username, password) {
+        const principal = await authApi.loginAdmin(username, password)
+        setAdmin(principal as AdminPrincipal)
       },
-      setRegisteredUser(registered) {
-        sessionStore.setUserId(registered.id)
-        setUserId(registered.id)
+      async logoutAdmin() {
+        await authApi.logoutAdmin()
+        setAdmin(undefined)
       },
     }),
-    [admin, repository, user, version],
+    [admin, loading, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

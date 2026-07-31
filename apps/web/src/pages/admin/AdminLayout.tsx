@@ -27,7 +27,7 @@ export function AdminLayout() {
         <nav className="admin-nav" aria-label="管理员导航">
           {navigation.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} className={({ isActive }) => isActive ? 'active' : ''}><Icon size={18} /><span>{label}</span></NavLink>)}
         </nav>
-        <div className="admin-profile"><div><span>当前管理员</span><strong>{admin?.username ?? 'admin'}</strong></div><button className="icon-button" aria-label="退出管理员登录" onClick={() => { logoutAdmin(); navigate('/admin/login') }}><LogOut size={18} /></button></div>
+        <div className="admin-profile"><div><span>当前管理员</span><strong>{admin?.username ?? 'admin'}</strong></div><button className="icon-button" aria-label="退出管理员登录" onClick={() => { void logoutAdmin().then(() => navigate('/admin/login')) }}><LogOut size={18} /></button></div>
       </aside>
       <main className="admin-main"><Outlet /></main>
     </div>

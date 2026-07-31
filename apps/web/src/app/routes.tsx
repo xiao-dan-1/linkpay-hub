@@ -23,6 +23,7 @@ export function AppRoutes() {
         <Route path="/user/workbench" element={<UserWorkbenchPage />} />
       </Route>
       <Route path="/studio/:accessToken" element={<StudioPage />} />
+      <Route path="/studio/workbench" element={<StudioPage />} />
       <Route path="/studio/invalid" element={<InvalidStudioPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route element={<AdminGuard />}>

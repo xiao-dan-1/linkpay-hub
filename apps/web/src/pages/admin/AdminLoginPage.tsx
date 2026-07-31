@@ -6,19 +6,21 @@ import { useAuth } from '../../auth/AuthContext'
 export function AdminLoginPage() {
   const { loginAdmin } = useAuth()
   const navigate = useNavigate()
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('Admin123!')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
+    setSubmitting(true)
     try {
-      loginAdmin(username.trim(), password)
+      await loginAdmin(username.trim(), password)
       navigate('/admin/dashboard')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '登录失败')
-    }
+    } finally { setSubmitting(false) }
   }
 
   return (
@@ -36,9 +38,8 @@ export function AdminLoginPage() {
           <label><span>管理员账号</span><div className="input-with-icon"><UserRound size={17} /><input aria-label="管理员账号" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required /></div></label>
           <label><span>管理员密码</span><div className="input-with-icon"><KeyRound size={17} /><input aria-label="管理员密码" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></div></label>
           {error ? <p className="form-error" role="alert">{error}</p> : null}
-          <button className="button auth-submit" type="submit">进入管理后台 <ArrowRight size={17} /></button>
+          <button className="button auth-submit" type="submit" disabled={submitting}>{submitting ? '正在登录…' : '进入管理后台'} <ArrowRight size={17} /></button>
         </form>
-        <p className="auth-footnote">演示账号：admin / Admin123!</p>
         <Link className="text-link" to="/login">返回用户登录</Link>
       </section>
     </main>

@@ -16,8 +16,8 @@ describe('user registration', () => {
     )
 
     await userEvent.type(screen.getByLabelText('账号'), 'fresh-user')
-    await userEvent.type(screen.getByLabelText('密码'), 'secret1')
-    await userEvent.type(screen.getByLabelText('确认密码'), 'secret1')
+    await userEvent.type(screen.getByLabelText('密码'), 'secret12')
+    await userEvent.type(screen.getByLabelText('确认密码'), 'secret12')
     await userEvent.click(
       screen.getByRole('button', { name: '注册并进入工作台' }),
     )

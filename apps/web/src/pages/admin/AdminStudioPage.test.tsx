@@ -19,8 +19,9 @@ describe('AdminStudioPage', () => {
       </MemoryRouter>,
     )
 
-    await userEvent.clear(screen.getByLabelText('工作室名称'))
-    await userEvent.type(screen.getByLabelText('工作室名称'), '新的工作室')
+    const input = await screen.findByLabelText('工作室名称')
+    await userEvent.clear(input)
+    await userEvent.type(input, '新的工作室')
     await userEvent.click(screen.getByRole('button', { name: '保存名称' }))
 
     expect(screen.getByDisplayValue('新的工作室')).toBeInTheDocument()

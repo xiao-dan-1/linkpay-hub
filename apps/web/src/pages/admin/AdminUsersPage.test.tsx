@@ -15,10 +15,10 @@ describe('AdminUsersPage', () => {
       </MemoryRouter>,
     )
 
-    await userEvent.click(screen.getByRole('button', { name: '停用 demo' }))
+    await userEvent.click(await screen.findByRole('button', { name: '停用 demo' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '确认停用' }))
 
-    expect(screen.getByText('已停用')).toBeInTheDocument()
+    expect(await screen.findByText('已停用')).toBeInTheDocument()
   })
 })

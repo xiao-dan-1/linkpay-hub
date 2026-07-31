@@ -2,8 +2,10 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from './AuthContext'
 
 export function UserGuard() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const location = useLocation()
+
+  if (loading) return <div className="route-loading">正在验证登录状态…</div>
 
   return user ? (
     <Outlet />
@@ -13,7 +15,9 @@ export function UserGuard() {
 }
 
 export function AdminGuard() {
-  const { admin } = useAuth()
+  const { admin, loading } = useAuth()
+
+  if (loading) return <div className="route-loading">正在验证管理员状态…</div>
 
   return admin ? <Outlet /> : <Navigate to="/admin/login" replace />
 }

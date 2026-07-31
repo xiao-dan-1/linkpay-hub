@@ -6,20 +6,22 @@ import { useAuth } from '../../auth/AuthContext'
 export function UserLoginPage() {
   const { loginUser } = useAuth()
   const navigate = useNavigate()
-  const [username, setUsername] = useState('demo')
-  const [password, setPassword] = useState('Demo123!')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
 
+    setSubmitting(true)
     try {
-      loginUser(username.trim(), password)
+      await loginUser(username.trim(), password)
       navigate('/user/workbench')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '登录失败')
-    }
+    } finally { setSubmitting(false) }
   }
 
   return (
@@ -49,9 +51,8 @@ export function UserLoginPage() {
             <div className="input-with-icon"><KeyRound size={17} /><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></div>
           </label>
           {error ? <p className="form-error" role="alert">{error}</p> : null}
-          <button className="button auth-submit" type="submit">进入工作台 <ArrowRight size={17} /></button>
+          <button className="button auth-submit" type="submit" disabled={submitting}>{submitting ? '正在登录…' : '进入工作台'} <ArrowRight size={17} /></button>
         </form>
-        <p className="auth-footnote">演示账号：demo / Demo123!</p>
         <Link className="text-link" to="/admin/login">管理员入口</Link>
       </section>
     </main>

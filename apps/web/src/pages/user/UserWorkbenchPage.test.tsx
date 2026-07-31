@@ -3,12 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { AppProviders } from '../../app/AppProviders'
-import { sessionStore } from '../../auth/session'
 import { UserWorkbenchPage } from './UserWorkbenchPage'
 
 describe('UserWorkbenchPage', () => {
   it('uses one unlimited input and labels the submitted-link list', async () => {
-    sessionStore.setUserId('user-demo')
     render(
       <MemoryRouter>
         <AppProviders>
@@ -20,11 +18,10 @@ describe('UserWorkbenchPage', () => {
     expect(screen.queryByRole('button', { name: '单条提交' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '批量提交' })).not.toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: '支付链接' }),
+      await screen.findByRole('heading', { name: '支付链接' }),
     ).toBeInTheDocument()
     expect(
-      screen
-        .getAllByRole('button', { name: /查看任务 TASK-/ })
+      (await screen.findAllByRole('button', { name: /查看任务 TASK-/ }))
         .map((button) => button.getAttribute('aria-label')),
     ).toEqual([
       '查看任务 TASK-1004',
