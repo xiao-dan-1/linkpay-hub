@@ -55,14 +55,18 @@ export function completeTaskState(
   task: Task,
   result: 'success' | 'failed',
   now: string,
+  feedback = '',
 ): Task {
   if (task.status !== 'processing') {
     throw new Error('只有处理中的任务可以完成')
   }
 
+  const normalizedFeedback = feedback.trim()
+
   return {
     ...task,
     status: result,
     completedAt: now,
+    ...(normalizedFeedback ? { feedback: normalizedFeedback } : {}),
   }
 }

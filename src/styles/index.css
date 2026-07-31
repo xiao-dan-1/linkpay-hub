@@ -267,9 +267,11 @@ a {
 
 .toast-region {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 100;
+  pointer-events: none;
 }
 
 .toast {
@@ -281,6 +283,75 @@ a {
   color: #075d69;
   box-shadow: var(--shadow);
   font-weight: 650;
+}
+
+.qr-detail-row dd {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.qr-code-frame {
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: var(--shadow-small);
+}
+
+.qr-code-frame svg {
+  display: block;
+  width: min(184px, 100%);
+  height: auto;
+}
+
+.qr-helper {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.feedback-content {
+  padding: 12px 14px;
+  border: 1px solid #cfe8ec;
+  border-radius: 11px;
+  background: #f2fbfc;
+  white-space: pre-wrap;
+}
+
+.studio-feedback-actions {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+}
+
+.studio-feedback-actions label {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.studio-feedback-actions textarea {
+  width: 100%;
+  min-height: 78px;
+  resize: vertical;
+  padding: 11px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 11px;
+  outline: 0;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.studio-feedback-actions textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(8, 169, 189, 0.12);
+}
+
+.drawer-action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .auth-page {
@@ -1403,6 +1474,11 @@ a {
 
   .drawer-actions .button {
     flex: 1;
+  }
+
+  .drawer-action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .submit-panel,

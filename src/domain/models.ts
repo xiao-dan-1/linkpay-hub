@@ -27,6 +27,7 @@ export type Task = {
   submittedAt: string
   processingStartedAt?: string
   completedAt?: string
+  feedback?: string
 }
 
 export type Admin = {

@@ -137,6 +137,7 @@ export class PrototypeRepository {
     studioId: string,
     result: Extract<TaskStatus, 'success' | 'failed'>,
     now = new Date().toISOString(),
+    feedback = '',
   ) {
     const state = loadState()
     const task = state.tasks.find(
@@ -147,7 +148,7 @@ export class PrototypeRepository {
       throw new Error('任务不存在')
     }
 
-    const updated = completeTaskState(task, result, now)
+    const updated = completeTaskState(task, result, now, feedback)
     saveState({
       ...state,
       tasks: state.tasks.map((item) => (item.id === taskId ? updated : item)),

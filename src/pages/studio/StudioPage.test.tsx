@@ -22,6 +22,10 @@ describe('StudioPage', () => {
     )
     let dialog = await screen.findByRole('dialog', { name: '任务详情' })
     expect(within(dialog).getByText('处理中')).toBeInTheDocument()
+    await userEvent.type(
+      within(dialog).getByLabelText('处理反馈（可选）'),
+      '支付链接已确认',
+    )
 
     await userEvent.click(within(dialog).getByRole('button', { name: '处理成功' }))
     const confirmation = await screen.findByRole('dialog', { name: '确认处理成功' })
@@ -29,5 +33,6 @@ describe('StudioPage', () => {
 
     dialog = await screen.findByRole('dialog', { name: '任务详情' })
     expect(within(dialog).getByText('成功')).toBeInTheDocument()
+    expect(within(dialog).getByText('支付链接已确认')).toBeInTheDocument()
   })
 })

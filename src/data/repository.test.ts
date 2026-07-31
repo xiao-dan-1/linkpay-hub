@@ -35,14 +35,15 @@ describe('PrototypeRepository', () => {
     )
 
     expect(opened.status).toBe('processing')
-    expect(
-      repository.completeTask(
-        opened.id,
-        'studio-demo',
-        'success',
-        '2026-08-02T02:00:00.000Z',
-      ).status,
-    ).toBe('success')
+    const completed = repository.completeTask(
+      opened.id,
+      'studio-demo',
+      'success',
+      '2026-08-02T02:00:00.000Z',
+      '支付链接已确认',
+    )
+    expect(completed.status).toBe('success')
+    expect(completed.feedback).toBe('支付链接已确认')
     expect(() =>
       repository.completeTask(
         opened.id,

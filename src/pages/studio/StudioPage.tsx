@@ -31,6 +31,7 @@ export function StudioPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [processingFeedback, setProcessingFeedback] = useState('')
   const [pendingResult, setPendingResult] = useState<'success' | 'failed' | null>(null)
   const [feedback, setFeedback] = useState('')
   const studio = accessToken
@@ -67,6 +68,7 @@ export function StudioPage() {
     const opened = repository.openTask(task.id, studio.id)
     refresh()
     setSelectedTask(opened)
+    setProcessingFeedback(opened.feedback ?? '')
     if (task.status === 'queued') setFeedback(`${task.id} 已开始处理`)
   }
 
@@ -76,6 +78,8 @@ export function StudioPage() {
       selectedTask.id,
       studio.id,
       pendingResult,
+      undefined,
+      processingFeedback,
     )
     refresh()
     setSelectedTask(updated)
@@ -112,8 +116,8 @@ export function StudioPage() {
       <TaskDetails
         task={selectedTask}
         user={selectedUser}
-        onClose={() => setSelectedTask(null)}
-        actions={selectedTask?.status === 'processing' ? <><button className="button danger" onClick={() => setPendingResult('failed')}><XCircle size={17} />处理失败</button><button className="button" onClick={() => setPendingResult('success')}><CheckCircle2 size={17} />处理成功</button></> : undefined}
+        onClose={() => { setSelectedTask(null); setProcessingFeedback('') }}
+        actions={selectedTask?.status === 'processing' ? <div className="studio-feedback-actions"><label htmlFor="processing-feedback">处理反馈（可选）</label><textarea id="processing-feedback" value={processingFeedback} onChange={(event) => setProcessingFeedback(event.target.value)} rows={3} placeholder="填写需要同步给用户的处理说明" /><div className="drawer-action-buttons"><button className="button danger" onClick={() => setPendingResult('failed')}><XCircle size={17} />处理失败</button><button className="button" onClick={() => setPendingResult('success')}><CheckCircle2 size={17} />处理成功</button></div></div> : undefined}
       />
       <ConfirmDialog
         open={pendingResult !== null}
