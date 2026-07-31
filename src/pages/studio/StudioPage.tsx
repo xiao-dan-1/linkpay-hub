@@ -1,5 +1,6 @@
 import {
   CheckCircle2,
+  ChevronRight,
   Clock3,
   Link2,
   LoaderCircle,
@@ -56,6 +57,12 @@ export function StudioPage() {
   const selectedUser = selectedTask
     ? state.users.find((user) => user.id === selectedTask.userId)
     : undefined
+  const selectedTaskIndex = selectedTask
+    ? tasks.findIndex((task) => task.id === selectedTask.id)
+    : -1
+  const nextTask = selectedTaskIndex >= 0
+    ? tasks[selectedTaskIndex + 1]
+    : undefined
 
   const counts = {
     queued: tasks.filter((task) => task.status === 'queued').length,
@@ -70,6 +77,10 @@ export function StudioPage() {
     setSelectedTask(opened)
     setProcessingFeedback(opened.feedback ?? '')
     if (task.status === 'queued') setFeedback(`${task.id} 已开始处理`)
+  }
+
+  const openNextTask = () => {
+    if (nextTask) openTask(nextTask)
   }
 
   const completeTask = () => {
@@ -117,7 +128,33 @@ export function StudioPage() {
         task={selectedTask}
         user={selectedUser}
         onClose={() => { setSelectedTask(null); setProcessingFeedback('') }}
-        actions={selectedTask?.status === 'processing' ? <div className="studio-feedback-actions"><label htmlFor="processing-feedback">处理反馈（可选）</label><textarea id="processing-feedback" value={processingFeedback} onChange={(event) => setProcessingFeedback(event.target.value)} rows={3} placeholder="填写需要同步给用户的处理说明" /><div className="drawer-action-buttons"><button className="button danger" onClick={() => setPendingResult('failed')}><XCircle size={17} />处理失败</button><button className="button" onClick={() => setPendingResult('success')}><CheckCircle2 size={17} />处理成功</button></div></div> : undefined}
+        actions={selectedTask ? (
+          <div className="studio-detail-actions">
+            {selectedTask.status === 'processing' ? (
+              <div className="studio-feedback-fields">
+                <label htmlFor="processing-feedback">处理反馈（可选）</label>
+                <textarea
+                  id="processing-feedback"
+                  value={processingFeedback}
+                  onChange={(event) => setProcessingFeedback(event.target.value)}
+                  rows={3}
+                  placeholder="填写需要同步给用户的处理说明"
+                />
+              </div>
+            ) : null}
+            <div className="studio-action-row">
+              <button className="button ghost" disabled={!nextTask} onClick={openNextTask}>
+                下一个任务<ChevronRight size={17} />
+              </button>
+              {selectedTask.status === 'processing' ? (
+                <div className="result-action-buttons">
+                  <button className="button danger" onClick={() => setPendingResult('failed')}><XCircle size={17} />处理失败</button>
+                  <button className="button" onClick={() => setPendingResult('success')}><CheckCircle2 size={17} />处理成功</button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : undefined}
       />
       <ConfirmDialog
         open={pendingResult !== null}
