@@ -31,6 +31,20 @@ services:
         condition: service_healthy
     restart: "no"
 
+  bootstrap:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      <<: *api_environment
+      ADMIN_BOOTSTRAP_USERNAME: ${ADMIN_BOOTSTRAP_USERNAME:-}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-}
+    command: ["node", "apps/api/dist/cli/bootstrap-admin.js"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
   api:
     build:
       context: .
@@ -38,7 +52,7 @@ services:
     restart: unless-stopped
     environment: *api_environment
     depends_on:
-      migrate:
+      bootstrap:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]

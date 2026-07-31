@@ -14,6 +14,8 @@ DATABASE_URL=postgresql://studio:对密码进行URL编码后填写@postgres:5432
 TEST_DATABASE_URL=postgresql://测试用户:测试密码@127.0.0.1:5432/studio_tasks_test
 TEST_APP_ORIGIN=http://127.0.0.1:5173
 COOKIE_SECRET=替换为至少32字符的随机密钥
+ADMIN_BOOTSTRAP_USERNAME=admin
+ADMIN_BOOTSTRAP_PASSWORD=替换为高强度管理员密码
 APP_ORIGIN=https://tasks.example.com
 HTTP_PORT=8080
 USER_SESSION_HOURS=168
@@ -34,11 +36,11 @@ curl -fsS http://127.0.0.1:8080/health/ready
 
 ## 3. 初始化管理员和工作室
 
-```bash
-docker compose --env-file .env.production exec api \
-  env ADMIN_USERNAME=admin ADMIN_PASSWORD='替换为高强度密码' \
-  node apps/api/dist/cli/create-admin.js
+首次 `docker compose up -d` 会在数据库迁移后读取 `ADMIN_BOOTSTRAP_USERNAME` 和 `ADMIN_BOOTSTRAP_PASSWORD` 自动创建管理员。两项必须同时填写；数据库中已有管理员时会跳过且不会覆盖密码。创建成功后建议从 `.env.production` 删除或清空这两项。
 
+工作室仍通过一次性命令初始化：
+
+```bash
 docker compose --env-file .env.production exec api \
   env STUDIO_NAME='工作室名称' \
   node apps/api/dist/cli/create-studio.js

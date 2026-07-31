@@ -17,6 +17,7 @@ npm run release:check -- -EnvFile .env.production
 - DNS 已指向服务器，HTTPS 证书有效且自动续期。
 - `APP_ORIGIN` 与正式 HTTPS 域名完全一致。
 - 数据库密码、`COOKIE_SECRET`、管理员密码均存储在密码管理器中。
+- 首次启动日志确认管理员已创建；随后已从 `.env.production` 删除或清空管理员引导密码。
 - 防火墙只开放必要的 HTTP/HTTPS 和运维入口；PostgreSQL 未映射公网端口。
 - 已创建首个管理员和唯一工作室，两个私密入口已保存。
 - 已实际完成一次：用户注册与登录 → 提交两条链接 → 工作室扫码、成功/失败反馈与下一个任务 → 用户查看结果 → 管理员停用用户。
