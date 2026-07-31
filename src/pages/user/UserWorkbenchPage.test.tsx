@@ -20,8 +20,18 @@ describe('UserWorkbenchPage', () => {
     expect(screen.queryByRole('button', { name: '单条提交' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '批量提交' })).not.toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: '我提交的支付链接' }),
+      screen.getByRole('heading', { name: '支付链接' }),
     ).toBeInTheDocument()
+    expect(
+      screen
+        .getAllByRole('button', { name: /查看任务 TASK-/ })
+        .map((button) => button.getAttribute('aria-label')),
+    ).toEqual([
+      '查看任务 TASK-1004',
+      '查看任务 TASK-1003',
+      '查看任务 TASK-1002',
+      '查看任务 TASK-1001',
+    ])
     const input = screen.getByLabelText('任务链接')
     fireEvent.change(input, {
       target: {

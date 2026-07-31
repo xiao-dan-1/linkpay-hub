@@ -12,7 +12,7 @@ describe('PrototypeRepository', () => {
     expect(user.studioId).toBe('studio-demo')
   })
 
-  it('creates independent queued tasks and returns them FIFO', () => {
+  it('returns user tasks newest first and studio tasks oldest first', () => {
     const repository = new PrototypeRepository()
     const created = repository.createTasks(
       'user-demo',
@@ -21,6 +21,9 @@ describe('PrototypeRepository', () => {
     )
 
     expect(created).toHaveLength(2)
+    expect(repository.getUserTasks('user-demo').at(0)?.id).toBe(
+      created.at(0)?.id,
+    )
     expect(repository.getStudioTasks('studio-demo').at(-1)?.id).toBe(
       created.at(-1)?.id,
     )
