@@ -4,6 +4,7 @@ import { ZodError } from 'zod'
 import { AppError, notFoundError } from './lib/errors.js'
 import { registerAuthRoutes } from './modules/auth/routes.js'
 import { registerHealthRoutes } from './modules/health/routes.js'
+import { registerUserTaskRoutes } from './modules/tasks/user-routes.js'
 import { registerAuthPlugin } from './plugins/auth.js'
 import { registerRequestContext } from './plugins/request-context.js'
 import { registerSecurity } from './plugins/security.js'
@@ -18,6 +19,7 @@ export async function buildApp(
   await registerAuthPlugin(app)
   await registerHealthRoutes(app)
   await registerAuthRoutes(app)
+  await registerUserTaskRoutes(app)
 
   app.setNotFoundHandler(async () => {
     throw notFoundError()
