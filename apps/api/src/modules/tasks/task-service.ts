@@ -1,5 +1,9 @@
 import { randomBytes } from 'node:crypto'
-import type { CreateTaskChunkInput, TaskStatus } from '@studio/contracts'
+import type {
+  CompleteTaskInput,
+  CreateTaskChunkInput,
+  TaskStatus,
+} from '@studio/contracts'
 import { prisma } from '../../db.js'
 import { Prisma } from '../../generated/prisma/client.js'
 import { AppError, notFoundError } from '../../lib/errors.js'
@@ -171,5 +175,141 @@ export const taskService = {
     if (!task) throw notFoundError()
     return serializeTask(task)
   },
-}
 
+  async listStudioTasks(input: {
+    studioId: string
+    status?: TaskStatus
+    search?: string
+    cursor?: string
+    limit: number
+  }) {
+    const cursor = decodeCursor(input.cursor)
+    const tasks = await prisma.task.findMany({
+      where: {
+        studioId: input.studioId,
+        ...(input.status ? { status: input.status } : {}),
+        ...(input.search
+          ? {
+              OR: [
+                { publicId: { contains: input.search, mode: 'insensitive' } },
+                { url: { contains: input.search, mode: 'insensitive' } },
+                { user: { username: { contains: input.search, mode: 'insensitive' } } },
+              ],
+            }
+          : {}),
+        ...(cursor !== undefined ? { queueSeq: { gt: cursor } } : {}),
+      },
+      include: { user: { select: { username: true } } },
+      orderBy: { queueSeq: 'asc' },
+      take: input.limit + 1,
+    })
+    const hasMore = tasks.length > input.limit
+    const items = hasMore ? tasks.slice(0, input.limit) : tasks
+    return {
+      items: items.map(serializeTask),
+      page: {
+        hasMore,
+        nextCursor: hasMore && items.length > 0
+          ? encodeCursor(items[items.length - 1]!.queueSeq)
+          : null,
+      },
+    }
+  },
+
+  async openStudioTask(studioId: string, publicId: string) {
+    return prisma.$transaction(async (transaction) => {
+      const task = await transaction.task.findFirst({
+        where: { studioId, publicId },
+        include: { user: { select: { username: true } } },
+      })
+      if (!task) throw notFoundError()
+
+      if (task.status === 'queued') {
+        const opened = await transaction.task.updateMany({
+          where: { id: task.id, studioId, status: 'queued' },
+          data: {
+            status: 'processing',
+            processingStartedAt: new Date(),
+            version: { increment: 1 },
+          },
+        })
+        if (opened.count === 1) {
+          await transaction.auditLog.create({
+            data: {
+              actorType: 'studio',
+              actorId: studioId,
+              action: 'task.processing_started',
+              targetType: 'task',
+              targetId: task.id,
+              metadata: { publicId: task.publicId },
+            },
+          })
+        }
+      }
+
+      const current = await transaction.task.findUniqueOrThrow({
+        where: { id: task.id },
+        include: { user: { select: { username: true } } },
+      })
+      return serializeTask(current)
+    })
+  },
+
+  async completeStudioTask(
+    studioId: string,
+    publicId: string,
+    input: CompleteTaskInput,
+  ) {
+    return prisma.$transaction(async (transaction) => {
+      const task = await transaction.task.findFirst({
+        where: { studioId, publicId },
+      })
+      if (!task) throw notFoundError()
+
+      const completed = await transaction.task.updateMany({
+        where: {
+          id: task.id,
+          studioId,
+          status: 'processing',
+          version: input.version,
+        },
+        data: {
+          status: input.result,
+          feedback: input.feedback?.trim() || null,
+          completedAt: new Date(),
+          version: { increment: 1 },
+        },
+      })
+      if (completed.count !== 1) {
+        throw new AppError(409, 'TASK_STATE_CONFLICT', '任务状态已被其他操作更新')
+      }
+
+      await transaction.auditLog.create({
+        data: {
+          actorType: 'studio',
+          actorId: studioId,
+          action: 'task.completed',
+          targetType: 'task',
+          targetId: task.id,
+          metadata: { publicId: task.publicId, result: input.result },
+        },
+      })
+      const current = await transaction.task.findUniqueOrThrow({
+        where: { id: task.id },
+        include: { user: { select: { username: true } } },
+      })
+      return serializeTask(current)
+    })
+  },
+
+  async nextStudioTask(studioId: string, publicId: string) {
+    const current = await prisma.task.findFirst({ where: { studioId, publicId } })
+    if (!current) throw notFoundError()
+    const next = await prisma.task.findFirst({
+      where: { studioId, queueSeq: { gt: current.queueSeq } },
+      orderBy: { queueSeq: 'asc' },
+    })
+    if (!next) return null
+    return this.openStudioTask(studioId, next.publicId)
+  },
+}
