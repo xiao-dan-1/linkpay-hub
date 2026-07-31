@@ -13,3 +13,12 @@ export function loadEnvironment(options: {
     quiet: true,
   })
 }
+
+export function requireTestDatabaseUrl(value: string | undefined) {
+  if (!value) throw new Error('TEST_DATABASE_URL is required')
+  const databaseName = decodeURIComponent(new URL(value).pathname.split('/').pop() ?? '')
+  if (!databaseName.endsWith('_test')) {
+    throw new Error('TEST_DATABASE_URL must use a database whose name ends with _test')
+  }
+  return value
+}

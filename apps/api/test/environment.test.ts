@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadEnvironment } from '../src/environment.js'
+import { loadEnvironment, requireTestDatabaseUrl } from '../src/environment.js'
 
 const temporaryDirectories: string[] = []
 
@@ -24,5 +24,17 @@ describe('environment loading', () => {
       PORT: '3001',
       APP_ORIGIN: 'http://127.0.0.1:5174',
     })
+  })
+
+  it('rejects using the development database for tests', () => {
+    expect(() => requireTestDatabaseUrl(
+      'postgresql://studio:password@127.0.0.1:5432/studio_tasks',
+    )).toThrow('TEST_DATABASE_URL must use a database whose name ends with _test')
+  })
+
+  it('accepts an isolated test database', () => {
+    expect(requireTestDatabaseUrl(
+      'postgresql://studio:password@127.0.0.1:5432/studio_tasks_test',
+    )).toBe('postgresql://studio:password@127.0.0.1:5432/studio_tasks_test')
   })
 })
