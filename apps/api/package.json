@@ -4,10 +4,14 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "predev": "npm run build -w @studio/contracts",
     "dev": "tsx watch src/server.ts",
+    "prebuild": "npm run build -w @studio/contracts",
     "build": "tsc -p tsconfig.build.json",
+    "pretypecheck": "npm run build -w @studio/contracts",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
+    "pretest:run": "npm run build -w @studio/contracts",
     "test:run": "vitest run",
     "admin:create": "tsx src/cli/create-admin.ts",
     "studio:create": "tsx src/cli/create-studio.ts"

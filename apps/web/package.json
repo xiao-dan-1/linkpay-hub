@@ -4,10 +4,14 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "predev": "npm run build -w @studio/contracts",
     "dev": "vite --host 0.0.0.0",
+    "prebuild": "npm run build -w @studio/contracts",
     "build": "tsc --noEmit && vite build",
+    "pretypecheck": "npm run build -w @studio/contracts",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
+    "pretest:run": "npm run build -w @studio/contracts",
     "test:run": "vitest run"
   },
   "dependencies": {
