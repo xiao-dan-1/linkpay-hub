@@ -6,6 +6,7 @@ import { NotFoundPage } from '../pages/NotFoundPage'
 import { UserLoginPage } from '../pages/user/UserLoginPage'
 import { UserRegisterPage } from '../pages/user/UserRegisterPage'
 import { UserWorkbenchPage } from '../pages/user/UserWorkbenchPage'
+import { StudioPage } from '../pages/studio/StudioPage'
 
 function Placeholder({ title }: { title: string }) {
   return <main className="app-shell"><h1>{title}</h1></main>
@@ -20,7 +21,7 @@ export function AppRoutes() {
       <Route element={<UserGuard />}>
         <Route path="/user/workbench" element={<UserWorkbenchPage />} />
       </Route>
-      <Route path="/studio/:accessToken" element={<Placeholder title="工作室队列" />} />
+      <Route path="/studio/:accessToken" element={<StudioPage />} />
       <Route path="/studio/invalid" element={<InvalidStudioPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route element={<AdminGuard />}>
