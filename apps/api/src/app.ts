@@ -3,6 +3,7 @@ import type { FastifyServerOptions } from 'fastify'
 import { ZodError } from 'zod'
 import { AppError, notFoundError } from './lib/errors.js'
 import { registerAuthRoutes } from './modules/auth/routes.js'
+import { registerAdminRoutes } from './modules/admin/routes.js'
 import { registerHealthRoutes } from './modules/health/routes.js'
 import { registerUserTaskRoutes } from './modules/tasks/user-routes.js'
 import { registerStudioTaskRoutes } from './modules/tasks/studio-routes.js'
@@ -20,6 +21,7 @@ export async function buildApp(
   await registerAuthPlugin(app)
   await registerHealthRoutes(app)
   await registerAuthRoutes(app)
+  await registerAdminRoutes(app)
   await registerUserTaskRoutes(app)
   await registerStudioTaskRoutes(app)
 
