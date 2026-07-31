@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../apps/api/src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TaskStatus {
+  queued
+  processing
+  success
+  failed
+}
+
+enum PrincipalType {
+  user
+  admin
+  studio
+}
+
+enum AuditActorType {
+  user
+  admin
+  studio
+  system
+}
+
+model Studio {
+  id                   String   @id @default(uuid())
+  name                 String
+  registrationCodeHash String   @unique
+  accessTokenHash      String   @unique
+  tokenVersion         Int      @default(0)
+  enabled              Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  users                User[]
+  tasks                Task[]
+}
+
+model User {
+  id                 String            @id @default(uuid())
+  username           String
+  normalizedUsername String            @unique
+  passwordHash       String
+  studioId           String
+  enabled            Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  studio             Studio            @relation(fields: [studioId], references: [id], onDelete: Restrict)
+  tasks              Task[]
+  submissionBatches  SubmissionBatch[]
+
+  @@index([studioId])
+}
+
+model Admin {
+  id                 String   @id @default(uuid())
+  username           String
+  normalizedUsername String   @unique
+  passwordHash       String
+  enabled            Boolean  @default(true)
+  passwordChangedAt  DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Task {
+  id                  String     @id @default(uuid())
+  publicId            String     @unique
+  queueSeq            BigInt     @unique @default(autoincrement())
+  url                 String
+  status              TaskStatus @default(queued)
+  userId              String
+  studioId            String
+  submittedAt         DateTime   @default(now())
+  processingStartedAt DateTime?
+  completedAt         DateTime?
+  feedback            String?
+  version             Int        @default(0)
+  user                 User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  studio               Studio     @relation(fields: [studioId], references: [id], onDelete: Restrict)
+
+  @@index([studioId, queueSeq])
+  @@index([userId, queueSeq])
+  @@index([studioId, status, queueSeq])
+}
+
+model Session {
+  id                 String        @id @default(uuid())
+  tokenHash          String        @unique
+  principalType      PrincipalType
+  principalId        String
+  studioTokenVersion Int?
+  expiresAt          DateTime
+  lastSeenAt         DateTime      @default(now())
+  createdAt          DateTime      @default(now())
+
+  @@index([principalType, principalId])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id         BigInt         @id @default(autoincrement())
+  actorType  AuditActorType
+  actorId    String?
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime       @default(now())
+
+  @@index([createdAt])
+  @@index([actorType, actorId, createdAt])
+}
+
+model SubmissionBatch {
+  id             String            @id @default(uuid())
+  userId         String
+  requestedCount Int
+  createdCount   Int               @default(0)
+  createdAt      DateTime          @default(now())
+  user           User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  chunks         SubmissionChunk[]
+
+  @@index([userId, createdAt])
+}
+
+model SubmissionChunk {
+  id              String          @id @default(uuid())
+  batchId         String
+  idempotencyKey  String
+  createdCount    Int
+  taskPublicIds   Json
+  createdAt       DateTime        @default(now())
+  batch           SubmissionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, idempotencyKey])
+}
