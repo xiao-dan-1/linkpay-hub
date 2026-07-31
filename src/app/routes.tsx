@@ -7,6 +7,9 @@ import { UserLoginPage } from '../pages/user/UserLoginPage'
 import { UserRegisterPage } from '../pages/user/UserRegisterPage'
 import { UserWorkbenchPage } from '../pages/user/UserWorkbenchPage'
 import { StudioPage } from '../pages/studio/StudioPage'
+import { AdminLayout } from '../pages/admin/AdminLayout'
+import { AdminDashboard } from '../pages/admin/AdminDashboard'
+import { AdminTasksPage } from '../pages/admin/AdminTasksPage'
 
 function Placeholder({ title }: { title: string }) {
   return <main className="app-shell"><h1>{title}</h1></main>
@@ -25,10 +28,10 @@ export function AppRoutes() {
       <Route path="/studio/invalid" element={<InvalidStudioPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route element={<AdminGuard />}>
-        <Route path="/admin" element={<Outlet />}>
+        <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<Placeholder title="管理员概览" />} />
-          <Route path="tasks" element={<Placeholder title="全部任务" />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="tasks" element={<AdminTasksPage />} />
           <Route path="users" element={<Placeholder title="用户管理" />} />
           <Route path="studio" element={<Placeholder title="工作室设置" />} />
         </Route>
