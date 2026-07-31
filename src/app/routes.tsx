@@ -10,6 +10,8 @@ import { StudioPage } from '../pages/studio/StudioPage'
 import { AdminLayout } from '../pages/admin/AdminLayout'
 import { AdminDashboard } from '../pages/admin/AdminDashboard'
 import { AdminTasksPage } from '../pages/admin/AdminTasksPage'
+import { AdminUsersPage } from '../pages/admin/AdminUsersPage'
+import { AdminStudioPage } from '../pages/admin/AdminStudioPage'
 
 function Placeholder({ title }: { title: string }) {
   return <main className="app-shell"><h1>{title}</h1></main>
@@ -32,8 +34,8 @@ export function AppRoutes() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="tasks" element={<AdminTasksPage />} />
-          <Route path="users" element={<Placeholder title="用户管理" />} />
-          <Route path="studio" element={<Placeholder title="工作室设置" />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="studio" element={<AdminStudioPage />} />
         </Route>
       </Route>
       <Route path="*" element={<NotFoundPage />} />
