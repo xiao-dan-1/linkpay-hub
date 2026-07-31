@@ -716,33 +716,6 @@ a {
   line-height: 1.6;
 }
 
-.segmented-control {
-  display: inline-flex;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-soft);
-}
-
-.segmented-control button {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 0;
-  border-radius: 9px;
-  padding: 9px 12px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-weight: 750;
-}
-
-.segmented-control button.active {
-  background: var(--surface);
-  color: var(--primary-dark);
-  box-shadow: var(--shadow-small);
-}
-
 .textarea-label {
   display: block;
   margin-bottom: 8px;
@@ -1444,14 +1417,8 @@ a {
     flex-direction: column;
   }
 
-  .segmented-control,
-  .segmented-control button,
   .submit-button {
     width: 100%;
-  }
-
-  .segmented-control button {
-    justify-content: center;
   }
 
   .studio-summary {

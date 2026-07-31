@@ -29,7 +29,7 @@ export function UserLoginPage() {
         <h1>任务工作台</h1>
         <p>提交链接、查看排队进度，并实时获取工作室处理结果。</p>
         <div className="auth-feature-list">
-          <span>单条与批量提交</span>
+          <span>按行自动识别任务</span>
           <span>任务状态实时联动</span>
           <span>专属工作室队列</span>
         </div>

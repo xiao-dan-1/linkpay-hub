@@ -13,13 +13,13 @@ describe('parseSubmittedLinks', () => {
     expect(result.invalid).toEqual(['ftp://bad'])
   })
 
-  it('rejects more than ten unique valid links', () => {
+  it('accepts an unlimited number of unique valid links', () => {
     const input = Array.from(
-      { length: 11 },
+      { length: 25 },
       (_, index) => `https://example.com/${index}`,
     ).join('\n')
 
-    expect(() => parseSubmittedLinks(input)).toThrow('单次最多提交 10 条链接')
+    expect(parseSubmittedLinks(input).valid).toHaveLength(25)
   })
 })
 

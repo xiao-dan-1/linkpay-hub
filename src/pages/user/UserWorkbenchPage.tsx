@@ -2,8 +2,6 @@ import {
   CheckCircle2,
   Clock3,
   Layers3,
-  Link2,
-  ListPlus,
   LoaderCircle,
   LogOut,
   Search,
@@ -22,14 +20,12 @@ import { useData } from '../../data/DataContext'
 import type { Task, TaskStatus } from '../../domain/models'
 import { parseSubmittedLinks } from '../../domain/taskRules'
 
-type SubmissionMode = 'single' | 'batch'
 type StatusFilter = 'all' | TaskStatus
 
 export function UserWorkbenchPage() {
   const navigate = useNavigate()
   const { user, logoutUser } = useAuth()
   const { repository, refresh } = useData()
-  const [mode, setMode] = useState<SubmissionMode>('single')
   const [rawInput, setRawInput] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
@@ -100,20 +96,16 @@ export function UserWorkbenchPage() {
         <section className="workbench-grid">
           <article className="panel submit-panel">
             <div className="panel-heading">
-              <div><p className="eyebrow">TASK SUBMIT</p><h2>创建任务</h2><p>支持单条提交和每行一条的批量提交。</p></div>
-              <div className="segmented-control" aria-label="提交模式">
-                <button className={mode === 'single' ? 'active' : ''} onClick={() => { setMode('single'); setRawInput('') }}><Link2 size={16} />单条提交</button>
-                <button className={mode === 'batch' ? 'active' : ''} onClick={() => { setMode('batch'); setRawInput('') }}><ListPlus size={16} />批量提交</button>
-              </div>
+              <div><p className="eyebrow">TASK SUBMIT</p><h2>创建任务</h2><p>每行输入一条支付链接，一行或多行都会自动识别。</p></div>
             </div>
             <label className="textarea-label" htmlFor="task-links">任务链接</label>
             <textarea
               id="task-links"
               aria-label="任务链接"
-              rows={mode === 'batch' ? 8 : 4}
+              rows={8}
               value={rawInput}
               onChange={(event) => setRawInput(event.target.value)}
-              placeholder={mode === 'batch' ? 'https://example.com/task-1\nhttps://example.com/task-2' : 'https://example.com/task'}
+              placeholder={'https://example.com/payment-1\nhttps://example.com/payment-2'}
             />
             <div className="validation-row" aria-live="polite">
               <span>有效 {parsed.valid.length} 条</span>
@@ -123,7 +115,7 @@ export function UserWorkbenchPage() {
               {parseError ? <span className="validation-error">{parseError}</span> : null}
             </div>
             {parsed.invalid.length ? <div className="invalid-links" role="alert">无效链接：{parsed.invalid.join('、')}</div> : null}
-            <div className="submit-footer"><span>单次最多 10 条，同次重复链接自动合并。</span><button className="button submit-button" disabled={!canSubmit} onClick={submitTasks}><Send size={17} />{submitLabel}</button></div>
+            <div className="submit-footer"><span>提交条数不限，同次重复链接自动合并。</span><button className="button submit-button" disabled={!canSubmit} onClick={submitTasks}><Send size={17} />{submitLabel}</button></div>
           </article>
           <aside className="panel studio-summary">
             <p className="eyebrow">BOUND STUDIO</p>
@@ -144,7 +136,7 @@ export function UserWorkbenchPage() {
 
         <section className="panel task-panel">
           <div className="panel-heading task-panel-heading">
-            <div><p className="eyebrow">MY TASKS</p><h2>我的任务</h2><p>查看提交记录与工作室处理进度。</p></div>
+            <div><p className="eyebrow">PAYMENT LINKS</p><h2>我提交的支付链接</h2><p>查看提交记录与工作室处理进度。</p></div>
             <div className="filters">
               <label className="search-field"><Search size={16} /><span className="sr-only">搜索任务</span><input aria-label="搜索任务" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="任务编号或链接" /></label>
               <label><span className="sr-only">状态筛选</span><select aria-label="状态筛选" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="all">全部状态</option><option value="queued">排队中</option><option value="processing">处理中</option><option value="success">成功</option><option value="failed">失败</option></select></label>

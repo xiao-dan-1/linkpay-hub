@@ -404,9 +404,9 @@ describe('parseSubmittedLinks', () => {
     expect(result.invalid).toEqual(['ftp://bad'])
   })
 
-  it('rejects more than ten unique valid links', () => {
+  it('accepts more than ten unique valid links', () => {
     const input = Array.from({ length: 11 }, (_, index) => `https://example.com/${index}`).join('\n')
-    expect(() => parseSubmittedLinks(input)).toThrow('单次最多提交 10 条链接')
+    expect(parseSubmittedLinks(input).valid).toHaveLength(11)
   })
 })
 
@@ -456,7 +456,6 @@ export function parseSubmittedLinks(input: string) {
     }
   }
 
-  if (valid.length > 10) throw new Error('单次最多提交 10 条链接')
   return { valid, invalid, blankCount, duplicateCount }
 }
 
@@ -1052,7 +1051,6 @@ describe('UserWorkbenchPage', () => {
   it('submits unique valid links and reports invalid lines', async () => {
     sessionStore.setUserId('user-demo')
     render(<MemoryRouter><AppProviders><UserWorkbenchPage /></AppProviders></MemoryRouter>)
-    await userEvent.click(screen.getByRole('button', { name: '批量提交' }))
     await userEvent.type(screen.getByLabelText('任务链接'), 'https://one.test\nhttps://one.test\nftp://bad\nhttps://two.test')
     expect(screen.getByText(/有效 2 条/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '提交 2 条任务' }))

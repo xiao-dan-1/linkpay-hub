@@ -36,10 +36,6 @@ export function parseSubmittedLinks(input: string): ParsedSubmission {
     valid.push(line)
   }
 
-  if (valid.length > 10) {
-    throw new Error('单次最多提交 10 条链接')
-  }
-
   return { valid, invalid, blankCount, duplicateCount }
 }
 
