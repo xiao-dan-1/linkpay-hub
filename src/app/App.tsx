@@ -1,7 +1,10 @@
+import { AppProviders } from './AppProviders'
+import { AppRoutes } from './routes'
+
 export function App() {
   return (
-    <main>
-      <h1>任务工作台</h1>
-    </main>
+    <AppProviders>
+      <AppRoutes />
+    </AppProviders>
   )
 }
