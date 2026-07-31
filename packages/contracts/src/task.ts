@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { pageInfoSchema } from './common'
+import { pageInfoSchema } from './common.js'
 
 export const taskStatusSchema = z.enum([
   'queued',
