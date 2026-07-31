@@ -18,7 +18,8 @@
     "db:generate": "prisma generate",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "release:check": "powershell -ExecutionPolicy Bypass -File ./scripts/release-check.ps1"
   },
   "devDependencies": {
     "prisma": "7.9.1",
