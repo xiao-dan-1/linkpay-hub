@@ -7,6 +7,7 @@ import { registerAdminRoutes } from './modules/admin/routes.js'
 import { registerHealthRoutes } from './modules/health/routes.js'
 import { registerUserTaskRoutes } from './modules/tasks/user-routes.js'
 import { registerStudioTaskRoutes } from './modules/tasks/studio-routes.js'
+import { registerLinkGeneratorRoutes } from './modules/link-generator/routes.js'
 import { registerAtParserRoutes } from './modules/at-parser/routes.js'
 import { registerAuthPlugin } from './plugins/auth.js'
 import { registerRequestContext } from './plugins/request-context.js'
@@ -25,6 +26,7 @@ export async function buildApp(
   await registerAdminRoutes(app)
   await registerUserTaskRoutes(app)
   await registerAtParserRoutes(app)
+  await registerLinkGeneratorRoutes(app)
   await registerStudioTaskRoutes(app)
 
   app.setNotFoundHandler(async () => {

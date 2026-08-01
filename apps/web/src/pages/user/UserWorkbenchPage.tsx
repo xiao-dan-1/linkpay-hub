@@ -2,6 +2,7 @@ import {
   CheckCircle2,
   Clock3,
   Layers3,
+  Link,
   Pen,
   RefreshCw,
   LoaderCircle,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { generatePayLink } from '../../api/at'
 import { deleteTask, listUserTasks, submitTasks, updateTask } from '../../api/tasks'
 import { useAuth } from '../../auth/AuthContext'
 import { AppShell } from '../../components/AppShell'
@@ -45,6 +47,7 @@ export function UserWorkbenchPage() {
   const [editAt, setEditAt] = useState('')
   const [saving, setSaving] = useState(false)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
+  const [generating, setGenerating] = useState(false)
 
   const refreshTasks = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -246,7 +249,21 @@ export function UserWorkbenchPage() {
         </div>
         <div className="key-create-form">
           <label htmlFor="edit-url">支付链接</label>
-          <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" style={{ flex: 1 }} />
+            <button className="button compact ghost" disabled={generating || !editAt.trim()} onClick={async () => {
+              setGenerating(true)
+              try {
+                const res = await generatePayLink(editAt.trim())
+                if (res.ok && res.pay_url) setEditUrl(res.pay_url)
+                else setFeedback(res.error || '生成失败')
+              } catch (e) {
+                setFeedback(e instanceof Error ? e.message : '生成失败')
+              } finally { setGenerating(false) }
+            }}>
+              <Link size={14} />{generating ? '生成中…' : '生成链接'}
+            </button>
+          </div>
           <small>{editUrl.length}/8192</small>
         </div>
         <div className="modal-actions">

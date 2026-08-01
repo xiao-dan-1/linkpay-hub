@@ -40,3 +40,10 @@ export async function checkAt(at: string): Promise<AtCheckResult> {
     body: { at },
   })
 }
+
+export async function generatePayLink(at: string): Promise<{ ok: boolean; pay_url?: string; error?: string }> {
+  return apiRequest('/api/v1/user/at/generate-pay-link', {
+    method: 'POST',
+    body: { at },
+  })
+}

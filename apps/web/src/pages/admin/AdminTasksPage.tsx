@@ -1,5 +1,6 @@
-import { Pen, Search } from 'lucide-react'
+import { Link, Pen, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { generatePayLink } from '../../api/at'
 import { deleteAdminTask, listAdminTasks, updateAdminTask } from '../../api/admin'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { ModalFrame } from '../../components/ModalFrame'
@@ -22,6 +23,7 @@ export function AdminTasksPage() {
   const [saving, setSaving] = useState(false)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [feedback, setFeedback] = useState('')
+  const [generating, setGenerating] = useState(false)
 
   const refresh = () => {
     listAdminTasks({
@@ -96,7 +98,21 @@ export function AdminTasksPage() {
         </div>
         <div className="key-create-form">
           <label htmlFor="edit-url">支付链接</label>
-          <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" style={{ flex: 1 }} />
+            <button className="button compact ghost" disabled={generating || !editAt.trim()} onClick={async () => {
+              setGenerating(true)
+              try {
+                const res = await generatePayLink(editAt.trim())
+                if (res.ok && res.pay_url) setEditUrl(res.pay_url)
+                else setFeedback(res.error || '生成失败')
+              } catch (e) {
+                setFeedback(e instanceof Error ? e.message : '生成失败')
+              } finally { setGenerating(false) }
+            }}>
+              <Link size={14} />{generating ? '生成中…' : '生成链接'}
+            </button>
+          </div>
           <small>{editUrl.length}/8192</small>
         </div>
         <div className="modal-actions">
