@@ -84,7 +84,7 @@ export function AdminTasksPage() {
       {error ? <p className="form-error" role="alert">{error}</p> : null}
       <section className="panel task-panel admin-panel">
         <div className="panel-heading task-panel-heading"><div><p>管理员可编辑排队任务，或删除排队/失败任务。</p></div><div className="filters"><label className="search-field"><Search size={16} /><span className="sr-only">搜索任务</span><input aria-label="搜索任务" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="编号、链接或密钥备注" /></label><label><span className="sr-only">状态筛选</span><select aria-label="状态筛选" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="all">全部状态</option><option value="queued">排队中</option><option value="processing">处理中</option><option value="success">成功</option><option value="failed">失败</option></select></label></div></div>
-        <TaskList tasks={tasks} users={[]} onSelect={setSelectedTask} onEdit={startEdit} />
+        <TaskList tasks={tasks} users={[]} onSelect={setSelectedTask} onEdit={startEdit} onEditAll />
       </section>
       <TaskDetails task={selectedTask} onClose={() => setSelectedTask(null)} />
 

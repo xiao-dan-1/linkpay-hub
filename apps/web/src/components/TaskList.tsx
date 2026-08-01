@@ -25,13 +25,14 @@ function copyToClipboard(text: string, label: string, setMsg: (m: string) => voi
 type AtModalData = { title: string; result: AtCheckResult }
 
 export function TaskList({
-  tasks, users, onSelect, onEdit,
+  tasks, users, onSelect, onEdit, onEditAll,
   emptyText = '暂时没有符合条件的任务',
 }: {
   tasks: Task[]
   users: User[]
   onSelect: (task: Task) => void
   onEdit?: (task: Task) => void
+  onEditAll?: boolean
   emptyText?: string
 }) {
   const userNames = useMemo(
@@ -105,7 +106,7 @@ export function TaskList({
 
               {/* actions */}
               <div className="queue-actions">
-                {onEdit && (task.status === 'queued' || task.status === 'failed') ? (
+                {onEdit && (onEditAll || task.status === 'queued' || task.status === 'failed') ? (
                   <button className="icon-button" aria-label="编辑" title="编辑" onClick={() => onEdit(task)}>
                     <Pen size={16} />
                   </button>

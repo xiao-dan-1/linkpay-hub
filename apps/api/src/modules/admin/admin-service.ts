@@ -224,10 +224,6 @@ export const adminService = {
       const task = await transaction.task.findUnique({ where: { publicId } })
       if (!task) throw notFoundError()
 
-      if (task.status !== 'queued' && task.status !== 'failed') {
-        throw new AppError(409, 'TASK_NOT_EDITABLE', '只有排队中或失败的任务可以编辑')
-      }
-
       const isExpired = task.status === 'queued'
         && task.submittedAt.getTime() + 15 * 60 * 1000 < Date.now()
       const needsRequeue = task.status === 'failed' || isExpired
