@@ -240,14 +240,14 @@ export function UserWorkbenchPage() {
         <h2>编辑任务</h2>
         <p className="muted">{editingTask?.id}</p>
         <div className="key-create-form">
-          <label htmlFor="edit-url">支付链接</label>
-          <input id="edit-url" data-autofocus value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" />
-          <small>{editUrl.length}/8192</small>
+          <label htmlFor="edit-at">AT Token</label>
+          <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
+          <small>{editAt.length}/8192</small>
         </div>
         <div className="key-create-form">
-          <label htmlFor="edit-at">AT Token</label>
-          <textarea id="edit-at" rows={3} value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
-          <small>{editAt.length}/8192</small>
+          <label htmlFor="edit-url">支付链接</label>
+          <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" />
+          <small>{editUrl.length}/8192</small>
         </div>
         <div className="modal-actions">
           <button className="button ghost" disabled={saving} onClick={() => setEditingTask(null)}>取消</button>
