@@ -49,6 +49,7 @@ export function UserWorkbenchPage() {
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [generating, setGenerating] = useState(false)
   const [creatingLink, setCreatingLink] = useState(false)
+  const [linkProgress, setLinkProgress] = useState<{ current: number; total: number } | null>(null)
 
   const refreshTasks = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -204,11 +205,12 @@ export function UserWorkbenchPage() {
                 setCreatingLink(true)
                 try {
                   const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
+                  setLinkProgress({ current: 0, total: atLines.length })
                   const results: string[] = []
                   for (let i = 0; i < atLines.length; i++) {
-                    setFeedback(`生成中 ${i + 1}/${atLines.length}…`)
                     const res = await generatePayLink(atLines[i].trim())
                     if (res.ok && res.pay_url) results.push(res.pay_url)
+                    setLinkProgress({ current: i + 1, total: atLines.length })
                   }
                   if (results.length > 0) {
                     setRawInput((prev) => (prev.trim() ? prev.trim() + '\n' : '') + results.join('\n'))
@@ -218,12 +220,21 @@ export function UserWorkbenchPage() {
                   }
                 } catch (e) {
                   setFeedback(e instanceof Error ? e.message : '生成失败')
-                } finally { setCreatingLink(false) }
+                } finally {
+                  setCreatingLink(false)
+                  setLinkProgress(null)
+                }
               }}>
                 <Link size={11} />{creatingLink ? '生成中…' : '生成链接'}
               </button>
             </label>
             <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} />
+          {linkProgress ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0', fontSize: 12, color: 'var(--text-muted)' }}>
+              <progress value={linkProgress.current} max={linkProgress.total} style={{ flex: 1, height: 4, accentColor: 'var(--primary)' }} />
+              <span style={{ whiteSpace: 'nowrap' }}>{linkProgress.current}/{linkProgress.total}</span>
+            </div>
+          ) : null}
           <div className="validation-row" aria-live="polite">
             <span>有效 {parsed.valid.length} 条</span>
             {parsed.duplicateCount ? <span>已去重 {parsed.duplicateCount} 条</span> : null}
