@@ -200,30 +200,28 @@ export function UserWorkbenchPage() {
             <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="eyJhbGci...（每行一个，与链接一一对应）" />
             <label className="textarea-label" htmlFor="task-links">
               支付链接
-              {atInput.trim() ? (
-                <button className="button compact ghost" style={{ marginLeft: 10, fontSize: 12 }} disabled={creatingLink} onClick={async () => {
-                  setCreatingLink(true)
-                  try {
-                    const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
-                    const results: string[] = []
-                    for (let i = 0; i < atLines.length; i++) {
-                      setFeedback(`生成中 ${i + 1}/${atLines.length}…`)
-                      const res = await generatePayLink(atLines[i].trim())
-                      if (res.ok && res.pay_url) results.push(res.pay_url)
-                    }
-                    if (results.length > 0) {
-                      setRawInput((prev) => (prev.trim() ? prev.trim() + '\n' : '') + results.join('\n'))
-                      setFeedback(`已生成 ${results.length} 条链接`)
-                    } else {
-                      setFeedback('未能生成任何链接')
-                    }
-                  } catch (e) {
-                    setFeedback(e instanceof Error ? e.message : '生成失败')
-                  } finally { setCreatingLink(false) }
-                }}>
-                  <Link size={13} />{creatingLink ? '生成中…' : '生成链接'}
-                </button>
-              ) : null}
+              <button className="button compact ghost" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', height: 26, visibility: atInput.trim() ? 'visible' : 'hidden' }} disabled={creatingLink || !atInput.trim()} onClick={async () => {
+                setCreatingLink(true)
+                try {
+                  const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
+                  const results: string[] = []
+                  for (let i = 0; i < atLines.length; i++) {
+                    setFeedback(`生成中 ${i + 1}/${atLines.length}…`)
+                    const res = await generatePayLink(atLines[i].trim())
+                    if (res.ok && res.pay_url) results.push(res.pay_url)
+                  }
+                  if (results.length > 0) {
+                    setRawInput((prev) => (prev.trim() ? prev.trim() + '\n' : '') + results.join('\n'))
+                    setFeedback(`已生成 ${results.length} 条链接`)
+                  } else {
+                    setFeedback('未能生成任何链接')
+                  }
+                } catch (e) {
+                  setFeedback(e instanceof Error ? e.message : '生成失败')
+                } finally { setCreatingLink(false) }
+              }}>
+                <Link size={11} />{creatingLink ? '生成中…' : '生成链接'}
+              </button>
             </label>
             <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} />
           <div className="validation-row" aria-live="polite">
@@ -277,8 +275,7 @@ export function UserWorkbenchPage() {
         <div className="key-create-form">
           <label htmlFor="edit-url">
             支付链接
-            {editAt.trim() ? (
-              <button className="button compact ghost" style={{ marginLeft: 10, fontSize: 12 }} disabled={generating} onClick={async () => {
+            <button className="button compact ghost" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', height: 26, visibility: editAt.trim() ? 'visible' : 'hidden' }} disabled={generating || !editAt.trim()} onClick={async () => {
                 setGenerating(true)
                 try {
                   const res = await generatePayLink(editAt.trim())
@@ -288,9 +285,8 @@ export function UserWorkbenchPage() {
                   setFeedback(e instanceof Error ? e.message : '生成失败')
                 } finally { setGenerating(false) }
               }}>
-                <Link size={13} />{generating ? '生成中…' : '生成链接'}
+                <Link size={11} />{generating ? '生成中…' : '生成链接'}
               </button>
-            ) : null}
           </label>
           <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" />
           <small>{editUrl.length}/8192</small>

@@ -100,7 +100,7 @@ export function AdminTasksPage() {
           <label htmlFor="edit-url">
             支付链接
             {editAt.trim() ? (
-              <button className="button compact ghost" style={{ marginLeft: 10, fontSize: 12 }} disabled={generating} onClick={async () => {
+              <button className="button compact ghost" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', height: 26 }} disabled={generating} onClick={async () => {
                 setGenerating(true)
                 try {
                   const res = await generatePayLink(editAt.trim())
@@ -110,7 +110,7 @@ export function AdminTasksPage() {
                   setFeedback(e instanceof Error ? e.message : '生成失败')
                 } finally { setGenerating(false) }
               }}>
-                <Link size={13} />{generating ? '生成中…' : '生成链接'}
+                <Link size={11} />{generating ? '生成中…' : '生成链接'}
               </button>
             ) : null}
           </label>
