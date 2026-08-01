@@ -111,7 +111,7 @@ export function AdminStudioPage() {
                   <td data-label="入口链接">
                     {s.entryUrl ? (
                       <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <code style={{ fontSize: 11, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.entryUrl}>…{s.entryUrl.slice(-20)}</code>
+                        <code style={{ fontSize: 11, maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.entryUrl}>{s.entryUrl}</code>
                         <a className="icon-button" style={{ width: 30, height: 30 }} href={s.entryUrl} target="_blank" rel="noreferrer"><ExternalLink size={14} /></a>
                       </span>
                     ) : '—'}

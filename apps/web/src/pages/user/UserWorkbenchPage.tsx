@@ -147,27 +147,22 @@ export function UserWorkbenchPage() {
             <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="eyJhbGci...（每行一个，与链接一一对应）" />
             <label className="textarea-label" htmlFor="task-links">支付链接</label>
             <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} />
-            <div className="validation-row" aria-live="polite">
-              <span>有效 {parsed.valid.length} 条</span>
-              {parsed.duplicateCount ? <span>已去重 {parsed.duplicateCount} 条</span> : null}
-              {parsed.blankCount ? <span>空行 {parsed.blankCount} 条</span> : null}
-              {parsed.invalid.length ? <span className="validation-error">无效 {parsed.invalid.length} 条</span> : null}
-              {atInput.trim() ? (() => {
-                const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
-                if (atLines.length === 0) return null
-                const info = extractAccountInfo(atLines[0])
-                if (info.email) return <span>关联: {info.email}</span>
-                return <span>AT {atLines.length} 条</span>
-              })() : null}
-            </div>
-            {parsed.invalid.length ? <div className="invalid-links" role="alert">无效链接：{parsed.invalid.join('、')}</div> : null}
-            <div className="submit-footer"><span>同次重复链接自动合并，超过 200 条将自动分批。</span><button className="button submit-button" disabled={!canSubmit} onClick={() => void onSubmit()}><Send size={17} />{submitLabel}</button></div>
+          <div className="validation-row" aria-live="polite">
+            <span>有效 {parsed.valid.length} 条</span>
+            {parsed.duplicateCount ? <span>已去重 {parsed.duplicateCount} 条</span> : null}
+            {parsed.blankCount ? <span>空行 {parsed.blankCount} 条</span> : null}
+            {parsed.invalid.length ? <span className="validation-error">无效 {parsed.invalid.length} 条</span> : null}
+            {atInput.trim() ? (() => {
+              const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
+              if (atLines.length === 0) return null
+              const info = extractAccountInfo(atLines[0])
+              if (info.email) return <span>关联: {info.email}</span>
+              return <span>AT {atLines.length} 条</span>
+            })() : null}
+          </div>
+          {parsed.invalid.length ? <div className="invalid-links" role="alert">无效链接：{parsed.invalid.join('、')}</div> : null}
+          <div className="submit-footer"><span>同次重复链接自动合并，超过 200 条将自动分批。</span><button className="button submit-button" disabled={!canSubmit} onClick={() => void onSubmit()}><Send size={17} />{submitLabel}</button></div>
           </article>
-          <aside className="panel studio-summary">
-            <p className="eyebrow">BOUND STUDIO</p><h2>已绑定工作室</h2><p>当前账号注册后已固定绑定工作室，新任务不会进入其他队列。</p>
-            <div className="summary-line"><span>当前排队</span><strong>{counts.queued}</strong></div>
-            <div className="summary-line"><span>处理中</span><strong>{counts.processing}</strong></div>
-          </aside>
         </section>
         <section className="stats-grid user-stats">
           <StatCard label="全部任务" value={counts.all} icon={<Layers3 size={19} />} active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} />
