@@ -41,7 +41,20 @@ export async function checkAt(at: string): Promise<AtCheckResult> {
   })
 }
 
-export async function generatePayLink(at: string): Promise<{ ok: boolean; pay_url?: string; error?: string }> {
+export interface Stage {
+  key: string
+  label: string
+  status: 'done' | 'running' | 'pending'
+}
+
+export interface GeneratePayLinkResult {
+  ok: boolean
+  pay_url?: string
+  error?: string
+  stages?: Stage[]
+}
+
+export async function generatePayLink(at: string): Promise<GeneratePayLinkResult> {
   return apiRequest('/api/v1/user/at/generate-pay-link', {
     method: 'POST',
     body: { at },

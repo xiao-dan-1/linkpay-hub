@@ -20,9 +20,22 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+export interface Stage {
+  key: string
+  label: string
+  status: 'done' | 'running' | 'pending'
+}
+
+export interface LinkGenResult {
+  ok: boolean
+  pay_url?: string
+  error?: string
+  stages?: Stage[]
+}
+
 export async function generateKakaoPayLink(
   accessToken: string,
-): Promise<{ ok: boolean; pay_url?: string; error?: string }> {
+): Promise<LinkGenResult> {
   const cfg = await getLinkGenConfig()
   if (!cfg.password) {
     return { ok: false, error: '链接生成服务未配置凭据，请在管理员设置中配置' }
@@ -63,6 +76,7 @@ export async function generateKakaoPayLink(
   const jobId = data.job_ids[0]
 
   // 2. Poll for completion (max 60s, every 2s)
+  let latestStages: Stage[] | undefined
   for (let i = 0; i < 30; i++) {
     await sleep(2000)
     let pollRes: Response
@@ -78,19 +92,28 @@ export async function generateKakaoPayLink(
 
     const pollData = (await pollRes.json()) as {
       ok: boolean
-      jobs?: Array<{ id: string; status: string; result?: { pay_url?: string }; error?: { message?: string } }>
+      jobs?: Array<{
+        id: string
+        status: string
+        detail?: string
+        stages?: Stage[]
+        result?: { pay_url?: string }
+        error?: { message?: string }
+      }>
     }
 
     const job = pollData.jobs?.find((j) => j.id === jobId)
     if (!job) continue
 
+    if (job.stages?.length) latestStages = job.stages
+
     if (job.status === 'done' && job.result?.pay_url) {
-      return { ok: true, pay_url: job.result.pay_url }
+      return { ok: true, pay_url: job.result.pay_url, stages: latestStages }
     }
     if (job.status === 'failed') {
-      return { ok: false, error: job.error?.message || '链接生成失败' }
+      return { ok: false, error: job.error?.message || '链接生成失败', stages: latestStages }
     }
   }
 
-  return { ok: false, error: '生成超时（30s），请重试' }
+  return { ok: false, error: '生成超时（60s），请重试', stages: latestStages }
 }
