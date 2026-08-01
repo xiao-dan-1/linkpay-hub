@@ -34,4 +34,18 @@ describe('application routes', () => {
       await screen.findByRole('heading', { name: '入口已失效' }),
     ).toBeInTheDocument()
   })
+
+  it('does not expose the removed user registration route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/s/obsolete/register']}>
+        <AppProviders>
+          <AppRoutes />
+        </AppProviders>
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByRole('heading', { name: '页面不存在' }),
+    ).toBeInTheDocument()
+  })
 })

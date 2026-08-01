@@ -10,19 +10,9 @@ export async function getUserSession() {
   return principal(await apiRequest('/api/v1/auth/user/session'))
 }
 
-export async function loginUser(username: string, password: string) {
-  return principal(await apiRequest('/api/v1/auth/user/login', {
-    method: 'POST', body: { username, password },
-  }))
-}
-
-export async function registerUser(
-  registrationCode: string,
-  username: string,
-  password: string,
-) {
-  return principal(await apiRequest(`/api/v1/auth/register/${encodeURIComponent(registrationCode)}`, {
-    method: 'POST', body: { username, password },
+export async function loginUser(key: string) {
+  return principal(await apiRequest('/api/v1/auth/user/key-login', {
+    method: 'POST', body: { key },
   }))
 }
 

@@ -102,7 +102,7 @@ export function UserWorkbenchPage() {
         title="提交任务"
         subtitle="所有任务只会进入当前账号绑定的工作室"
         eyebrow="USER WORKBENCH"
-        actions={<><span className="identity-chip">{user.username}</span><button className="button ghost" onClick={() => void signOut()}><LogOut size={17} />退出登录</button></>}
+        actions={<><span className="identity-chip">{user.userLabel}</span><button className="button ghost" onClick={() => void signOut()}><LogOut size={17} />退出登录</button></>}
       >
         <section className="workbench-grid">
           <article className="panel submit-panel">

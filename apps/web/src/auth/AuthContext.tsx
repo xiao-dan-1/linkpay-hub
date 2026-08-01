@@ -5,7 +5,7 @@ import * as authApi from '../api/auth'
 
 type UserPrincipal = SessionPrincipal & {
   role: 'user'
-  username: string
+  userLabel: string
   studioId: string
 }
 
@@ -18,8 +18,7 @@ type AuthValue = {
   user?: UserPrincipal
   admin?: AdminPrincipal
   loading: boolean
-  loginUser: (username: string, password: string) => Promise<void>
-  registerUser: (registrationCode: string, username: string, password: string) => Promise<void>
+  loginUser: (key: string) => Promise<void>
   logoutUser: () => Promise<void>
   loginAdmin: (username: string, password: string) => Promise<void>
   logoutAdmin: () => Promise<void>
@@ -53,12 +52,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       user,
       admin,
       loading,
-      async loginUser(username, password) {
-        const principal = await authApi.loginUser(username, password)
-        setUser(principal as UserPrincipal)
-      },
-      async registerUser(registrationCode, username, password) {
-        const principal = await authApi.registerUser(registrationCode, username, password)
+      async loginUser(key) {
+        const principal = await authApi.loginUser(key)
         setUser(principal as UserPrincipal)
       },
       async logoutUser() {

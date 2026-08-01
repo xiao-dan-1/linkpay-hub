@@ -10,8 +10,8 @@ function Harness() {
 
   return (
     <>
-      <span>{auth.user?.username ?? '访客'}</span>
-      <button onClick={() => auth.loginUser('demo', 'valid-password')}>登录</button>
+      <span>{auth.user?.userLabel ?? '访客'}</span>
+      <button onClick={() => auth.loginUser('USR-ABCD-EFGH-JKMN-PQRS')}>登录</button>
       <button onClick={auth.logoutUser}>退出</button>
     </>
   )
@@ -28,7 +28,7 @@ describe('AuthContext', () => {
 
     expect(await screen.findByText('访客')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '登录' }))
-    expect(screen.getByText('demo')).toBeInTheDocument()
+    expect(screen.getByText('客户 A')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: '退出' }))
     expect(screen.getByText('访客')).toBeInTheDocument()

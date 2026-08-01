@@ -4,7 +4,6 @@ import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { InvalidStudioPage } from '../pages/InvalidStudioPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { UserLoginPage } from '../pages/user/UserLoginPage'
-import { UserRegisterPage } from '../pages/user/UserRegisterPage'
 import { UserWorkbenchPage } from '../pages/user/UserWorkbenchPage'
 import { StudioPage } from '../pages/studio/StudioPage'
 import { AdminLayout } from '../pages/admin/AdminLayout'
@@ -18,7 +17,6 @@ export function AppRoutes() {
     <Routes>
       <Route index element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<UserLoginPage />} />
-      <Route path="/s/:registrationCode/register" element={<UserRegisterPage />} />
       <Route element={<UserGuard />}>
         <Route path="/user/workbench" element={<UserWorkbenchPage />} />
       </Route>

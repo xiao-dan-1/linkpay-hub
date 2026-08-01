@@ -5,6 +5,7 @@ type Principal = {
   id: string
   role: 'user' | 'admin' | 'studio'
   username?: string
+  userLabel?: string
   studioId?: string
 }
 
@@ -12,7 +13,6 @@ const now = '2026-08-01T00:00:00.000Z'
 const USER_ID = '11111111-1111-4111-8111-111111111111'
 const STUDIO_ID = '22222222-2222-4222-8222-222222222222'
 const ADMIN_ID = '33333333-3333-4333-8333-333333333333'
-const FRESH_USER_ID = '44444444-4444-4444-8444-444444444444'
 
 function fixtureTask(id: string, status: TaskStatus, index: number): Task {
   return {
@@ -45,7 +45,7 @@ export const mockApiState: {
 }
 
 export function resetMockApiState() {
-  mockApiState.userSession = { id: USER_ID, role: 'user', username: 'demo', studioId: STUDIO_ID }
+  mockApiState.userSession = { id: USER_ID, role: 'user', userLabel: '客户 A', studioId: STUDIO_ID }
   mockApiState.adminSession = { id: ADMIN_ID, role: 'admin', username: 'admin' }
   mockApiState.studioSession = { id: STUDIO_ID, role: 'studio', studioId: STUDIO_ID }
   mockApiState.tasks = [
@@ -100,17 +100,13 @@ export function installMockApi() {
     if (path === '/api/v1/auth/user/session') return mockApiState.userSession ? json({ principal: mockApiState.userSession }) : unauthorized()
     if (path === '/api/v1/auth/admin/session') return mockApiState.adminSession ? json({ principal: mockApiState.adminSession }) : unauthorized()
     if (path === '/api/v1/auth/studio/session') return mockApiState.studioSession ? json({ principal: mockApiState.studioSession }) : unauthorized()
-    if (path === '/api/v1/auth/user/login' && method === 'POST') {
-      mockApiState.userSession = { id: USER_ID, role: 'user', username: String(body.username), studioId: STUDIO_ID }
+    if (path === '/api/v1/auth/user/key-login' && method === 'POST') {
+      mockApiState.userSession = { id: USER_ID, role: 'user', userLabel: '客户 A', studioId: STUDIO_ID }
       return json({ principal: mockApiState.userSession })
     }
     if (path === '/api/v1/auth/admin/login' && method === 'POST') {
       mockApiState.adminSession = { id: ADMIN_ID, role: 'admin', username: String(body.username) }
       return json({ principal: mockApiState.adminSession })
-    }
-    if (path.startsWith('/api/v1/auth/register/') && method === 'POST') {
-      mockApiState.userSession = { id: FRESH_USER_ID, role: 'user', username: String(body.username), studioId: STUDIO_ID }
-      return json({ principal: mockApiState.userSession }, 201)
     }
     if (path === '/api/v1/auth/user/logout' && method === 'POST') { mockApiState.userSession = null; return json(undefined, 204) }
     if (path === '/api/v1/auth/admin/logout' && method === 'POST') { mockApiState.adminSession = null; return json(undefined, 204) }

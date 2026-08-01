@@ -1,4 +1,4 @@
-import { ArrowRight, KeyRound, UserRound } from 'lucide-react'
+import { ArrowRight, KeyRound } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
@@ -6,8 +6,7 @@ import { useAuth } from '../../auth/AuthContext'
 export function UserLoginPage() {
   const { loginUser } = useAuth()
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [accessKey, setAccessKey] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -17,7 +16,7 @@ export function UserLoginPage() {
 
     setSubmitting(true)
     try {
-      await loginUser(username.trim(), password)
+      await loginUser(accessKey.trim())
       navigate('/user/workbench')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '登录失败')
@@ -37,18 +36,14 @@ export function UserLoginPage() {
         </div>
       </section>
       <section className="auth-card" aria-labelledby="user-login-title">
-        <div className="auth-icon"><UserRound size={24} /></div>
+        <div className="auth-icon"><KeyRound size={24} /></div>
         <p className="eyebrow">USER ACCESS</p>
         <h2 id="user-login-title">用户登录</h2>
-        <p className="muted">使用工作室注册的账号进入提交工作台。</p>
+        <p className="muted">输入管理员发放的访问密钥进入提交工作台。</p>
         <form onSubmit={onSubmit} className="form-stack">
           <label>
-            <span>账号</span>
-            <div className="input-with-icon"><UserRound size={17} /><input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required /></div>
-          </label>
-          <label>
-            <span>密码</span>
-            <div className="input-with-icon"><KeyRound size={17} /><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /></div>
+            <span>访问密钥</span>
+            <div className="input-with-icon"><KeyRound size={17} /><input aria-label="访问密钥" value={accessKey} onChange={(event) => setAccessKey(event.target.value)} autoComplete="off" spellCheck={false} placeholder="USR-XXXX-XXXX-XXXX-XXXX" required /></div>
           </label>
           {error ? <p className="form-error" role="alert">{error}</p> : null}
           <button className="button auth-submit" type="submit" disabled={submitting}>{submitting ? '正在登录…' : '进入工作台'} <ArrowRight size={17} /></button>
