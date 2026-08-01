@@ -87,9 +87,9 @@ export function TaskList({
               </div>
 
               {/* link */}
-              <a className="queue-link" href={task.url} target="_blank" rel="noreferrer" title={task.url} onClick={e => e.stopPropagation()}>
+              <span className="queue-link" title={task.url} onClick={() => onSelect(task)}>
                 {task.url.length > 48 ? `${task.url.slice(0, 48)}…` : task.url}
-              </a>
+              </span>
 
               {/* time */}
               <div className="queue-time">
@@ -113,7 +113,7 @@ export function TaskList({
                   </button>
                 ) : null}
                 {task.at ? (
-                  <button className={`icon-button${loadingTask === task.id ? ' checking' : ''}`} aria-label="测活查订阅" title="测活/查订阅" disabled={loadingTask === task.id} onClick={() => void handleCheck(task)}>
+                  <button className={`icon-button${loadingTask === task.id ? ' checking' : ''}`} aria-label="测活查套餐" title="测活/查套餐" disabled={loadingTask === task.id} onClick={() => void handleCheck(task)}>
                     <Activity size={16} className={loadingTask === task.id ? 'icon-pulse' : ''} />
                   </button>
                 ) : null}

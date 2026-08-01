@@ -54,7 +54,7 @@ export function TaskDetails({
           <div style={{ display: 'flex', gap: 8 }}>
             {task.at ? (
               <button className="button compact secondary" disabled={loading} onClick={() => void handleCheck()}>
-                <Activity size={14} className={loading ? 'icon-pulse' : ''} />测活
+                <Activity size={14} className={loading ? 'icon-pulse' : ''} />测活/查套餐
               </button>
             ) : null}
             <button className="icon-button" aria-label="关闭" onClick={onClose}><X size={18} /></button>
