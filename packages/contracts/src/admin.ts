@@ -3,10 +3,22 @@ import { pageInfoSchema } from './common.js'
 
 export const adminUserSchema = z.object({
   id: z.string().uuid(),
-  username: z.string(),
+  maskedKey: z.string(),
+  note: z.string().nullable(),
   studioId: z.string().uuid(),
   enabled: z.boolean(),
   createdAt: z.string().datetime(),
+  lastUsedAt: z.string().datetime().nullable(),
+  taskCount: z.number().int().nonnegative(),
+})
+
+export const createUserKeySchema = z.object({
+  note: z.string().trim().max(200, '备注最多 200 个字符').optional(),
+})
+
+export const createUserKeyResponseSchema = z.object({
+  user: adminUserSchema,
+  accessKey: z.string().regex(/^USR-[A-HJ-NP-Z2-9]{4}(?:-[A-HJ-NP-Z2-9]{4}){3}$/),
 })
 
 export const updateUserEnabledSchema = z.object({

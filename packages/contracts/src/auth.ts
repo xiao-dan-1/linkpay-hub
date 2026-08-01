@@ -11,18 +11,29 @@ export const passwordSchema = z
   .min(8, '密码至少需要 8 个字符')
   .max(256, '密码最多 256 个字符')
 
-export const userLoginSchema = z.object({
+export const adminLoginSchema = z.object({
   username: usernameSchema,
   password: passwordSchema,
 })
 
-export const adminLoginSchema = userLoginSchema
-export const userRegistrationSchema = userLoginSchema
+export const userAccessKeySchema = z
+  .string()
+  .trim()
+  .transform((value) => value.toUpperCase())
+  .pipe(z.string().regex(
+    /^USR-[A-HJ-NP-Z2-9]{4}(?:-[A-HJ-NP-Z2-9]{4}){3}$/,
+    '请输入有效的用户密钥',
+  ))
+
+export const userKeyLoginSchema = z.object({
+  key: userAccessKeySchema,
+})
 
 export const sessionPrincipalSchema = z.object({
   id: z.string().uuid(),
   role: z.enum(['user', 'admin', 'studio']),
   username: z.string().optional(),
+  userLabel: z.string().optional(),
   studioId: z.string().uuid().optional(),
 })
 
@@ -34,6 +45,5 @@ export const csrfResponseSchema = z.object({
   token: z.string().min(32),
 })
 
-export type UserLoginInput = z.infer<typeof userLoginSchema>
-export type UserRegistrationInput = z.infer<typeof userRegistrationSchema>
+export type UserKeyLoginInput = z.infer<typeof userKeyLoginSchema>
 export type SessionPrincipal = z.infer<typeof sessionPrincipalSchema>

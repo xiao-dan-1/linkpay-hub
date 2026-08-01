@@ -26,7 +26,7 @@ export const taskSchema = z.object({
   processingStartedAt: z.string().datetime().optional(),
   completedAt: z.string().datetime().optional(),
   feedback: z.string().max(2000).optional(),
-  username: z.string().optional(),
+  userLabel: z.string().optional(),
   version: z.number().int().nonnegative(),
 })
 

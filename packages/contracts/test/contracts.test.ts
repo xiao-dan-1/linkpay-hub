@@ -1,18 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createUserKeySchema,
   createTaskChunkSchema,
   taskSchema,
-  userLoginSchema,
+  userKeyLoginSchema,
 } from '../src/index'
 
 describe('production contracts', () => {
-  it('validates login credentials', () => {
+  it('validates and normalizes reusable user access keys', () => {
     expect(
-      userLoginSchema.parse({ username: 'demo', password: 'secret12' }),
-    ).toEqual({ username: 'demo', password: 'secret12' })
+      userKeyLoginSchema.parse({ key: ' usr-abcd-efgh-jkmn-pqrs ' }),
+    ).toEqual({ key: 'USR-ABCD-EFGH-JKMN-PQRS' })
     expect(() =>
-      userLoginSchema.parse({ username: 'demo', password: '1' }),
+      userKeyLoginSchema.parse({ key: 'USR-ABCI-EFGH-JKMN-PQRS' }),
     ).toThrow()
+  })
+
+  it('validates optional administrator key notes', () => {
+    expect(createUserKeySchema.parse({ note: ' 客户 A ' })).toEqual({ note: '客户 A' })
+    expect(createUserKeySchema.parse({})).toEqual({})
+    expect(() => createUserKeySchema.parse({ note: 'a'.repeat(201) })).toThrow()
   })
 
   it('limits transport chunks while preserving unlimited user submissions', () => {
@@ -45,7 +52,8 @@ describe('production contracts', () => {
         queueSeq: '1',
         submittedAt: '2026-08-01T00:00:00.000Z',
         version: 0,
-      }).status,
-    ).toBe('queued')
+        userLabel: '客户 A',
+      }).userLabel,
+    ).toBe('客户 A')
   })
 })
