@@ -198,11 +198,9 @@ export function UserWorkbenchPage() {
             <div className="panel-heading"><div><p className="eyebrow">TASK SUBMIT</p><h2>创建任务</h2><p>每行输入一条支付链接，数量不限，系统会自动分批提交。</p></div></div>
             <label className="textarea-label" htmlFor="task-at">AT Token</label>
             <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="eyJhbGci...（每行一个，与链接一一对应）" />
-            <label className="textarea-label" htmlFor="task-links">支付链接</label>
-            <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} />
             {atInput.trim() ? (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
-                <button className="button compact ghost" disabled={creatingLink} onClick={async () => {
+              <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
+                <button className="button compact ghost" style={{ minWidth: 200 }} disabled={creatingLink} onClick={async () => {
                   setCreatingLink(true)
                   try {
                     const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
@@ -226,6 +224,8 @@ export function UserWorkbenchPage() {
                 </button>
               </div>
             ) : null}
+            <label className="textarea-label" htmlFor="task-links">支付链接</label>
+            <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} />
           <div className="validation-row" aria-live="polite">
             <span>有效 {parsed.valid.length} 条</span>
             {parsed.duplicateCount ? <span>已去重 {parsed.duplicateCount} 条</span> : null}
@@ -273,24 +273,26 @@ export function UserWorkbenchPage() {
           <label htmlFor="edit-at">AT Token</label>
           <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
           <small>{editAt.length}/8192</small>
+          {editAt.trim() ? (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+              <button className="button compact ghost" style={{ minWidth: 180 }} disabled={generating} onClick={async () => {
+                setGenerating(true)
+                try {
+                  const res = await generatePayLink(editAt.trim())
+                  if (res.ok && res.pay_url) setEditUrl(res.pay_url)
+                  else setFeedback(res.error || '生成失败')
+                } catch (e) {
+                  setFeedback(e instanceof Error ? e.message : '生成失败')
+                } finally { setGenerating(false) }
+              }}>
+                <Link size={14} />{generating ? '生成中…' : '生成链接'}
+              </button>
+            </div>
+          ) : null}
         </div>
         <div className="key-create-form">
           <label htmlFor="edit-url">支付链接</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" style={{ flex: 1 }} />
-            <button className="button compact ghost" disabled={generating || !editAt.trim()} onClick={async () => {
-              setGenerating(true)
-              try {
-                const res = await generatePayLink(editAt.trim())
-                if (res.ok && res.pay_url) setEditUrl(res.pay_url)
-                else setFeedback(res.error || '生成失败')
-              } catch (e) {
-                setFeedback(e instanceof Error ? e.message : '生成失败')
-              } finally { setGenerating(false) }
-            }}>
-              <Link size={14} />{generating ? '生成中…' : '生成链接'}
-            </button>
-          </div>
+          <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" />
           <small>{editUrl.length}/8192</small>
         </div>
         <div className="modal-actions">
