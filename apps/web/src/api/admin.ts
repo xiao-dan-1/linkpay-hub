@@ -7,8 +7,9 @@ import {
   studioSchema,
   taskListSchema,
   taskSchema,
+  trendsResponseSchema,
 } from '@studio/contracts'
-import type { TaskStatus } from '@studio/contracts'
+import type { TaskStatus, TrendsResponse } from '@studio/contracts'
 import { z } from 'zod'
 import type { Studio, User } from '../domain/models'
 import { apiRequest } from './client'
@@ -21,6 +22,11 @@ const userListSchema = z.object({
 
 export async function getDashboard() {
   return dashboardSchema.parse(await apiRequest('/api/v1/admin/dashboard'))
+}
+
+export async function getTrends(days = 30): Promise<TrendsResponse> {
+  const query = new URLSearchParams({ days: String(days) })
+  return trendsResponseSchema.parse(await apiRequest(`/api/v1/admin/trends?${query}`))
 }
 
 export async function listAdminTasks(input: { status?: TaskStatus; search?: string } = {}) {

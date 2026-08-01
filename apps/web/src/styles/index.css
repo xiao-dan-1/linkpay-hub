@@ -1386,6 +1386,61 @@ a {
   border-color: #fecaca;
 }
 
+/* ---- Trend Charts ---- */
+.trends-section {
+  margin-top: 18px;
+}
+
+.trends-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.trend-chart-card {
+  padding: 20px 16px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--shadow-small);
+}
+
+.trend-chart-card h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 750;
+  color: var(--text-muted);
+}
+
+/* Recharts SVG overrides — match the project's muted aesthetic */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--border);
+  stroke-opacity: 0.6;
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+
+.recharts-text.recharts-cartesian-axis-tick-value {
+  font-family: inherit;
+}
+
+.recharts-default-tooltip {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-small) !important;
+  background: var(--surface) !important;
+  box-shadow: var(--shadow-small) !important;
+  font-family: inherit !important;
+}
+
+.recharts-legend-item-text {
+  color: var(--text) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1481,6 +1536,10 @@ a {
 
   .admin-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trends-charts {
+    grid-template-columns: 1fr;
   }
 
   .studio-settings-grid {

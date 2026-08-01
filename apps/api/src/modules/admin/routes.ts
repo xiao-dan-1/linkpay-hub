@@ -1,6 +1,7 @@
 import {
   createUserKeySchema,
   taskListQuerySchema,
+  trendsQuerySchema,
   updateStudioSchema,
   updateUserEnabledSchema,
 } from '@studio/contracts'
@@ -29,6 +30,11 @@ export async function registerAdminRoutes(app: FastifyInstance) {
   app.get('/api/v1/admin/dashboard', { preHandler: app.requireAdmin }, async () => (
     adminService.dashboard()
   ))
+
+  app.get('/api/v1/admin/trends', { preHandler: app.requireAdmin }, async (request) => {
+    const { days } = trendsQuerySchema.parse(request.query)
+    return adminService.trends(days)
+  })
 
   app.get('/api/v1/admin/tasks', { preHandler: app.requireAdmin }, async (request) => {
     return adminService.listTasks(taskListQuerySchema.parse(request.query))

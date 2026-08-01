@@ -181,6 +181,24 @@ export function installMockApi() {
       const count = (status: TaskStatus) => mockApiState.tasks.filter((task) => task.status === status).length
       return json({ users: mockApiState.users.length, tasks: mockApiState.tasks.length, queued: count('queued'), processing: count('processing'), success: count('success'), failed: count('failed') })
     }
+    if (path === '/api/v1/admin/trends') {
+      const days = Number(url.searchParams.get('days') ?? 30)
+      const daily: Array<{ date: string; submitted: number; completed: number; success: number; failed: number }> = []
+      const cursor = new Date()
+      cursor.setDate(cursor.getDate() - days + 1)
+      for (let i = 0; i < days; i++) {
+        const date = cursor.toISOString().slice(0, 10)
+        // Deterministic values so tests can assert on specific days
+        const n = (i * 7 + 3) % 20
+        const submitted = i === days - 1 ? 4 : i === days - 2 ? 3 : 2 + (n % 3)
+        const completed = i === days - 1 ? 3 : i === days - 2 ? 2 : 1 + (n % 2)
+        const success = i === days - 1 ? 2 : i === days - 2 ? 2 : (n % 2)
+        const failed = completed - success
+        daily.push({ date, submitted, completed, success, failed })
+        cursor.setDate(cursor.getDate() + 1)
+      }
+      return json({ daily })
+    }
     if (path === '/api/v1/admin/tasks') {
       const status = url.searchParams.get('status')
       const search = url.searchParams.get('search')?.toLowerCase()

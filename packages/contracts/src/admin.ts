@@ -65,3 +65,21 @@ export const dashboardSchema = z.object({
   success: z.number().int().nonnegative(),
   failed: z.number().int().nonnegative(),
 })
+
+export const trendPointSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  submitted: z.number().int().nonnegative(),
+  completed: z.number().int().nonnegative(),
+  success: z.number().int().nonnegative(),
+  failed: z.number().int().nonnegative(),
+})
+export type TrendPoint = z.infer<typeof trendPointSchema>
+
+export const trendsResponseSchema = z.object({
+  daily: z.array(trendPointSchema),
+})
+export type TrendsResponse = z.infer<typeof trendsResponseSchema>
+
+export const trendsQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+})

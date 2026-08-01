@@ -100,6 +100,64 @@ export const adminService = {
     }
   },
 
+  async trends(days: number) {
+    const endDate = new Date()
+    endDate.setHours(23, 59, 59, 999)
+    const startDate = new Date(endDate)
+    startDate.setDate(startDate.getDate() - days + 1)
+    startDate.setHours(0, 0, 0, 0)
+
+    // Generate all date keys in the range using local-date strings,
+    // so the keys match the stored timestamps regardless of timezone.
+    function localDateKey(d: Date) {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
+    }
+
+    const dateKeys: string[] = []
+    const cursor = new Date(startDate)
+    while (cursor <= endDate) {
+      dateKeys.push(localDateKey(cursor))
+      cursor.setDate(cursor.getDate() + 1)
+    }
+
+    // Initialize zero buckets
+    const buckets = new Map<string, { submitted: number; completed: number; success: number; failed: number }>()
+    for (const key of dateKeys) {
+      buckets.set(key, { submitted: 0, completed: 0, success: 0, failed: 0 })
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: { submittedAt: { gte: startDate } },
+      select: { submittedAt: true, completedAt: true, status: true },
+    })
+
+    for (const task of tasks) {
+      const submitKey = localDateKey(task.submittedAt)
+      const submitBucket = buckets.get(submitKey)
+      if (submitBucket) submitBucket.submitted++
+
+      if (task.completedAt) {
+        const doneKey = localDateKey(task.completedAt)
+        const doneBucket = buckets.get(doneKey)
+        if (doneBucket) {
+          doneBucket.completed++
+          if (task.status === 'success') doneBucket.success++
+          if (task.status === 'failed') doneBucket.failed++
+        }
+      }
+    }
+
+    return {
+      daily: dateKeys.map((date) => ({
+        date,
+        ...buckets.get(date)!,
+      })),
+    }
+  },
+
   async listTasks(input: {
     status?: TaskStatus
     search?: string

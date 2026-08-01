@@ -126,6 +126,77 @@ describe('administrator API', () => {
     expect(audits.json().items[0]).toMatchObject({ action: 'fixture.created' })
   })
 
+  it('returns daily trends with zero-filled date range', async () => {
+    // Create tasks on two different recent days within the 7-day window.
+    // We use dates relative to "now" so they always fall inside the query's
+    // startDate..endDate range, regardless of the server timezone.
+    const now = new Date()
+    const day1 = new Date(now)
+    day1.setDate(day1.getDate() - 1) // yesterday
+    const day2 = new Date(now)
+    day2.setDate(day2.getDate() - 2) // day before yesterday
+
+    await prisma.task.createMany({
+      data: [
+        { publicId: 'TASK-T1', url: 'https://a.test/pay', status: 'success',
+          userId, studioId, submittedAt: day1, completedAt: day1 },
+        { publicId: 'TASK-T2', url: 'https://b.test/pay', status: 'failed',
+          userId, studioId, submittedAt: day1, completedAt: day1 },
+        { publicId: 'TASK-T3', url: 'https://c.test/pay', status: 'queued',
+          userId, studioId, submittedAt: day2 },
+      ],
+    })
+
+    const res = await app.inject({
+      method: 'GET', url: '/api/v1/admin/trends?days=30', headers: { cookie: adminCookie },
+    })
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.daily).toHaveLength(30)
+
+    // Find the entries that have tasks
+    const active = body.daily.filter((d: { submitted: number }) => d.submitted > 0)
+    expect(active).toHaveLength(2)
+
+    // Day with 2 submitted + completed (1 success, 1 failed)
+    const twoTaskDay = active.find((d: { submitted: number }) => d.submitted === 2)
+    expect(twoTaskDay).toBeDefined()
+    expect(twoTaskDay!.completed).toBe(2)
+    expect(twoTaskDay!.success).toBe(1)
+    expect(twoTaskDay!.failed).toBe(1)
+
+    // Day with 1 submitted, 0 completed
+    const oneTaskDay = active.find((d: { submitted: number }) => d.submitted === 1)
+    expect(oneTaskDay).toBeDefined()
+    expect(oneTaskDay!.completed).toBe(0)
+    expect(oneTaskDay!.success).toBe(0)
+    expect(oneTaskDay!.failed).toBe(0)
+
+    // Verify zero-fill: days with no tasks have all zeros
+    const empty = body.daily.find((d: { submitted: number }) => d.submitted === 0)
+    expect(empty).toBeDefined()
+    expect(empty!.completed).toBe(0)
+    expect(empty!.success).toBe(0)
+    expect(empty!.failed).toBe(0)
+
+    // All dates should be in YYYY-MM-DD format
+    for (const d of body.daily) {
+      expect(d.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    }
+  })
+
+  it('rejects out-of-range days parameter for trends', async () => {
+    const res = await app.inject({
+      method: 'GET', url: '/api/v1/admin/trends?days=0', headers: { cookie: adminCookie },
+    })
+    expect(res.statusCode).toBe(400)
+
+    const res2 = await app.inject({
+      method: 'GET', url: '/api/v1/admin/trends?days=400', headers: { cookie: adminCookie },
+    })
+    expect(res2.statusCode).toBe(400)
+  })
+
   it('creates a reusable key, returns it once, and lists only safe metadata', async () => {
     const created = await app.inject({
       method: 'POST',
