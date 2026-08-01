@@ -84,7 +84,7 @@ export function AdminTasksPage() {
         <div className="panel-heading task-panel-heading"><div><p>管理员可编辑排队任务，或删除排队/失败任务。</p></div><div className="filters"><label className="search-field"><Search size={16} /><span className="sr-only">搜索任务</span><input aria-label="搜索任务" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="编号、链接或密钥备注" /></label><label><span className="sr-only">状态筛选</span><select aria-label="状态筛选" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="all">全部状态</option><option value="queued">排队中</option><option value="processing">处理中</option><option value="success">成功</option><option value="failed">失败</option></select></label></div></div>
         <TaskList tasks={tasks} users={[]} onSelect={setSelectedTask} />
       </section>
-      <TaskDetails task={selectedTask} onClose={() => setSelectedTask(null)} onEdit={startEdit} onDelete={setDeletingTask} />
+      <TaskDetails task={selectedTask} onClose={() => setSelectedTask(null)} onEdit={startEdit} />
 
       <ModalFrame open={editingTask !== null} title="编辑任务" onDismiss={() => setEditingTask(null)}>
         <h2>编辑任务</h2>
@@ -101,6 +101,9 @@ export function AdminTasksPage() {
         </div>
         <div className="modal-actions">
           <button className="button ghost" disabled={saving} onClick={() => setEditingTask(null)}>取消</button>
+          {editingTask && (editingTask.status === 'queued' || editingTask.status === 'failed') ? (
+            <button className="button danger" disabled={saving} onClick={() => { setEditingTask(null); setDeletingTask(editingTask) }}>删除任务</button>
+          ) : null}
           <button className="button" disabled={saving || !editUrl.trim()} onClick={() => void saveEdit()}>
             <Pen size={17} />{saving ? '保存中…' : '保存修改'}
           </button>

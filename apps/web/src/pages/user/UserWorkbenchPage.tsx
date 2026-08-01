@@ -234,7 +234,7 @@ export function UserWorkbenchPage() {
           {loading ? <div className="empty-state"><p>正在加载任务…</p></div> : <TaskList tasks={filteredTasks} users={[]} onSelect={setSelectedTask} />}
         </section>
       </AppShell>
-      <TaskDetails task={selectedTask} onClose={() => setSelectedTask(null)} onEdit={startEdit} onDelete={setDeletingTask} />
+      <TaskDetails task={selectedTask} onClose={() => setSelectedTask(null)} onEdit={startEdit} />
 
       <ModalFrame open={editingTask !== null} title="编辑任务" onDismiss={() => setEditingTask(null)}>
         <h2>编辑任务</h2>
@@ -251,6 +251,9 @@ export function UserWorkbenchPage() {
         </div>
         <div className="modal-actions">
           <button className="button ghost" disabled={saving} onClick={() => setEditingTask(null)}>取消</button>
+          {editingTask && (editingTask.status === 'queued' || editingTask.status === 'failed') ? (
+            <button className="button danger" disabled={saving} onClick={() => { setEditingTask(null); setDeletingTask(editingTask) }}>删除任务</button>
+          ) : null}
           <button className="button" disabled={saving || !editUrl.trim()} onClick={() => void saveEdit()}>
             <Pen size={17} />{saving ? '保存中…' : '保存修改'}
           </button>
