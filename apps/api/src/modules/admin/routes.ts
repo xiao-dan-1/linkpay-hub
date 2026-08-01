@@ -107,6 +107,22 @@ export async function registerAdminRoutes(app: FastifyInstance) {
     adminService.getStudio()
   ))
 
+  app.get(
+    '/api/v1/admin/studios',
+    { preHandler: app.requireAdmin },
+    async () => adminService.listStudios(),
+  )
+
+  app.post(
+    '/api/v1/admin/studio',
+    { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
+    async (request, reply) => {
+      const adminId = adminPrincipal(request.principal)
+      const body = updateStudioSchema.parse(request.body)
+      return reply.code(201).send(await adminService.createStudio(adminId, body.name))
+    },
+  )
+
   app.patch(
     '/api/v1/admin/studio',
     { onRequest: app.csrfProtection, preHandler: app.requireAdmin },

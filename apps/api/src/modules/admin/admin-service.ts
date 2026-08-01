@@ -387,6 +387,35 @@ export const adminService = {
     return serializeStudio(studio)
   },
 
+  async listStudios() {
+    const studios = await prisma.studio.findMany({ orderBy: { createdAt: 'asc' } })
+    return studios.map(serializeStudio)
+  },
+
+  async createStudio(adminId: string, name: string) {
+    const rawToken = createOpaqueToken()
+    return prisma.$transaction(async (transaction) => {
+      const studio = await transaction.studio.create({
+        data: {
+          name,
+          accessTokenHash: hashToken(rawToken),
+          accessTokenCipher: encryptAccessKey(rawToken),
+        },
+      })
+      await writeAudit(transaction, {
+        actorId: adminId,
+        action: 'studio.created',
+        targetType: 'studio',
+        targetId: studio.id,
+        metadata: { name },
+      })
+      return {
+        studio: serializeStudio(studio),
+        accessToken: rawToken,
+      }
+    })
+  },
+
   async updateStudio(adminId: string, name: string) {
     return prisma.$transaction(async (transaction) => {
       const studio = await transaction.studio.findFirst()

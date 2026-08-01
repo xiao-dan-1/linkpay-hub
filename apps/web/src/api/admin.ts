@@ -81,6 +81,16 @@ export async function deleteUser(userId: string) {
   await apiRequest(`/api/v1/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE' })
 }
 
+export async function listStudios(): Promise<Studio[]> {
+  return z.array(studioSchema).parse(await apiRequest('/api/v1/admin/studios'))
+}
+
+export async function createStudio(name: string) {
+  return z.object({ studio: studioSchema, accessToken: z.string() }).parse(
+    await apiRequest('/api/v1/admin/studio', { method: 'POST', body: { name } }),
+  )
+}
+
 export async function getStudio(): Promise<Studio> {
   return studioSchema.parse(await apiRequest('/api/v1/admin/studio'))
 }
