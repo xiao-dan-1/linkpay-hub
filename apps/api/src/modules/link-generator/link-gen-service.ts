@@ -16,6 +16,9 @@ function sleep(ms: number) {
 export async function generateKakaoPayLink(
   accessToken: string,
 ): Promise<{ ok: boolean; pay_url?: string; error?: string }> {
+  if (!config.LINK_GEN_PASSWORD) {
+    return { ok: false, error: '链接生成服务未配置凭据' }
+  }
   // 1. Create kakao_kr job
   let res: Response
   try {
