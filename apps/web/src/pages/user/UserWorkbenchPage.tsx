@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { generatePayLink } from '../../api/at'
+import { checkLinkJob, startLinkJob, type Stage } from '../../api/at'
 import { deleteTask, listUserTasks, submitTasks, updateTask } from '../../api/tasks'
 import { useAuth } from '../../auth/AuthContext'
 import { AppShell } from '../../components/AppShell'
@@ -48,7 +48,7 @@ export function UserWorkbenchPage() {
   const [saving, setSaving] = useState(false)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [generating, setGenerating] = useState(false)
-  const [genStages, setGenStages] = useState<Array<{ key: string; label: string; status: string }> | null>(null)
+  const [genStages, setGenStages] = useState<Stage[] | null>(null)
   const [creatingLink, setCreatingLink] = useState(false)
   const [linkProgress, setLinkProgress] = useState<{ current: number; total: number } | null>(null)
 
@@ -209,8 +209,17 @@ export function UserWorkbenchPage() {
                   setLinkProgress({ current: 0, total: atLines.length })
                   const results: string[] = []
                   for (let i = 0; i < atLines.length; i++) {
-                    const res = await generatePayLink(atLines[i].trim())
-                    if (res.ok && res.pay_url) results.push(res.pay_url)
+                    const created = await startLinkJob(atLines[i].trim())
+                    if (!created.ok || !created.jobId) continue
+                    for (let p = 0; p < 30; p++) {
+                      await new Promise(r => setTimeout(r, 2000))
+                      const job = await checkLinkJob(created.jobId)
+                      if (job.status === 'done' && job.pay_url) {
+                        results.push(job.pay_url)
+                        break
+                      }
+                      if (job.status === 'failed') break
+                    }
                     setLinkProgress({ current: i + 1, total: atLines.length })
                   }
                   if (results.length > 0) {
@@ -291,10 +300,25 @@ export function UserWorkbenchPage() {
                 setGenerating(true)
                 setGenStages(null)
                 try {
-                  const res = await generatePayLink(editAt.trim())
-                  if (res.stages) setGenStages(res.stages)
-                  if (res.ok && res.pay_url) setEditUrl(res.pay_url)
-                  else if (!res.ok) setFeedback(res.error || '生成失败')
+                  const created = await startLinkJob(editAt.trim())
+                  if (!created.ok || !created.jobId) {
+                    setFeedback(created.error || '创建任务失败')
+                    setGenerating(false)
+                    return
+                  }
+                  for (let i = 0; i < 30; i++) {
+                    await new Promise(r => setTimeout(r, 2000))
+                    const job = await checkLinkJob(created.jobId)
+                    if (job.stages) setGenStages(job.stages)
+                    if (job.status === 'done' && job.pay_url) {
+                      setEditUrl(job.pay_url)
+                      break
+                    }
+                    if (job.status === 'failed') {
+                      setFeedback(job.error || '链接生成失败')
+                      break
+                    }
+                  }
                 } catch (e) {
                   setFeedback(e instanceof Error ? e.message : '生成失败')
                 } finally { setGenerating(false) }

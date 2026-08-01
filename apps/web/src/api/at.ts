@@ -47,16 +47,20 @@ export interface Stage {
   status: 'done' | 'running' | 'pending'
 }
 
-export interface GeneratePayLinkResult {
-  ok: boolean
+export interface JobCheckResult {
+  status: 'running' | 'done' | 'failed'
+  stages?: Stage[]
   pay_url?: string
   error?: string
-  stages?: Stage[]
 }
 
-export async function generatePayLink(at: string): Promise<GeneratePayLinkResult> {
+export async function startLinkJob(at: string): Promise<{ ok: boolean; jobId?: string; error?: string }> {
   return apiRequest('/api/v1/user/at/generate-pay-link', {
     method: 'POST',
     body: { at },
   })
+}
+
+export async function checkLinkJob(jobId: string): Promise<JobCheckResult> {
+  return apiRequest(`/api/v1/user/at/generate-pay-link/${encodeURIComponent(jobId)}`)
 }
