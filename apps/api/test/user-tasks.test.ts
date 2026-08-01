@@ -6,6 +6,7 @@ import {
   sessionCookieNames,
   sessionService,
 } from '../src/modules/auth/session-service.js'
+import { hashUserAccessKey } from '../src/lib/user-keys.js'
 
 const origin = 'http://127.0.0.1:5173'
 function cookiesFrom(response: { headers: Record<string, unknown> }) {
@@ -34,10 +35,11 @@ describe('user task API', () => {
     await prisma.admin.deleteMany()
     await prisma.studio.deleteMany()
     const studio = await prisma.studio.create({ data: {
-      name: '测试工作室', registrationCodeHash: 'reg-user', accessTokenHash: 'access-user',
+      name: '测试工作室', accessTokenHash: 'access-user',
     } })
     const user = await prisma.user.create({ data: {
-      username: 'demo', normalizedUsername: 'demo', passwordHash: 'hash', studioId: studio.id,
+      accessKeyHash: hashUserAccessKey('USR-ABCD-EFGH-JKMN-PQRS'),
+      keyPrefix: 'USR-ABCD', keySuffix: 'PQRS', note: '客户 A', studioId: studio.id,
     } })
     userId = user.id
     const session = await sessionService.create('user', user.id)
@@ -88,7 +90,8 @@ describe('user task API', () => {
   it('does not expose another user task', async () => {
     const studio = await prisma.studio.findFirstOrThrow()
     const other = await prisma.user.create({ data: {
-      username: 'other', normalizedUsername: 'other', passwordHash: 'hash', studioId: studio.id,
+      accessKeyHash: hashUserAccessKey('USR-WXYZ-2345-6789-ABCD'),
+      keyPrefix: 'USR-WXYZ', keySuffix: 'ABCD', studioId: studio.id,
     } })
     await prisma.task.create({ data: {
       publicId: 'TASK-PRIVATE', url: 'https://private.test', userId: other.id, studioId: studio.id,

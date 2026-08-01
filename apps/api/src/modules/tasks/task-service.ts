@@ -28,6 +28,12 @@ function decodeCursor(cursor?: string) {
   }
 }
 
+const taskUserSelect = {
+  note: true,
+  keyPrefix: true,
+  keySuffix: true,
+} as const
+
 function chunkResult(chunk: {
   batchId: string
   createdCount: number
@@ -193,13 +199,15 @@ export const taskService = {
               OR: [
                 { publicId: { contains: input.search, mode: 'insensitive' } },
                 { url: { contains: input.search, mode: 'insensitive' } },
-                { user: { username: { contains: input.search, mode: 'insensitive' } } },
+                { user: { note: { contains: input.search, mode: 'insensitive' } } },
+                { user: { keyPrefix: { contains: input.search, mode: 'insensitive' } } },
+                { user: { keySuffix: { contains: input.search, mode: 'insensitive' } } },
               ],
             }
           : {}),
         ...(cursor !== undefined ? { queueSeq: { gt: cursor } } : {}),
       },
-      include: { user: { select: { username: true } } },
+      include: { user: { select: taskUserSelect } },
       orderBy: { queueSeq: 'asc' },
       take: input.limit + 1,
     })
@@ -220,7 +228,7 @@ export const taskService = {
     return prisma.$transaction(async (transaction) => {
       const task = await transaction.task.findFirst({
         where: { studioId, publicId },
-        include: { user: { select: { username: true } } },
+        include: { user: { select: taskUserSelect } },
       })
       if (!task) throw notFoundError()
 
@@ -249,7 +257,7 @@ export const taskService = {
 
       const current = await transaction.task.findUniqueOrThrow({
         where: { id: task.id },
-        include: { user: { select: { username: true } } },
+        include: { user: { select: taskUserSelect } },
       })
       return serializeTask(current)
     })
@@ -296,7 +304,7 @@ export const taskService = {
       })
       const current = await transaction.task.findUniqueOrThrow({
         where: { id: task.id },
-        include: { user: { select: { username: true } } },
+        include: { user: { select: taskUserSelect } },
       })
       return serializeTask(current)
     })

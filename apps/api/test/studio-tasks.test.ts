@@ -6,6 +6,7 @@ import {
   sessionCookieNames,
   sessionService,
 } from '../src/modules/auth/session-service.js'
+import { hashUserAccessKey } from '../src/lib/user-keys.js'
 
 const origin = 'http://127.0.0.1:5173'
 
@@ -37,11 +38,12 @@ describe('studio task API', () => {
     await prisma.studio.deleteMany()
 
     const studio = await prisma.studio.create({ data: {
-      name: '测试工作室', registrationCodeHash: 'reg-studio', accessTokenHash: 'access-studio',
+      name: '测试工作室', accessTokenHash: 'access-studio',
     } })
     studioId = studio.id
     const user = await prisma.user.create({ data: {
-      username: 'demo', normalizedUsername: 'demo', passwordHash: 'hash', studioId,
+      accessKeyHash: hashUserAccessKey('USR-ABCD-EFGH-JKMN-PQRS'),
+      keyPrefix: 'USR-ABCD', keySuffix: 'PQRS', note: '客户 A', studioId,
     } })
     userId = user.id
     const session = await sessionService.create('studio', studioId, studio.tokenVersion)
@@ -85,7 +87,8 @@ describe('studio task API', () => {
     expect(response.json().items.map((task: { publicId: string }) => task.publicId)).toEqual([
       'TASK-ONE', 'TASK-TWO', 'TASK-THREE',
     ])
-    expect(response.json().items[0].username).toBe('demo')
+    expect(response.json().items[0].userLabel).toBe('客户 A')
+    expect(JSON.stringify(response.json())).not.toContain('accessKeyHash')
   })
 
   it('opens a queued task once and keeps terminal tasks read-only', async () => {
@@ -158,10 +161,11 @@ describe('studio task API', () => {
     expect(next.json().task).toMatchObject({ publicId: 'TASK-NEXT', status: 'processing' })
 
     const otherStudio = await prisma.studio.create({ data: {
-      name: '其他工作室', registrationCodeHash: 'reg-other', accessTokenHash: 'access-other',
+      name: '其他工作室', accessTokenHash: 'access-other',
     } })
     const otherUser = await prisma.user.create({ data: {
-      username: 'other', normalizedUsername: 'other', passwordHash: 'hash', studioId: otherStudio.id,
+      accessKeyHash: hashUserAccessKey('USR-WXYZ-2345-6789-ABCD'),
+      keyPrefix: 'USR-WXYZ', keySuffix: 'ABCD', studioId: otherStudio.id,
     } })
     await prisma.task.create({ data: {
       publicId: 'TASK-PRIVATE', url: 'https://private.test/pay',

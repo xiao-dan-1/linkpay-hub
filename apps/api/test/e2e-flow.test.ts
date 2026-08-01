@@ -32,7 +32,6 @@ describe('production end-to-end flow', () => {
     await prisma.studio.deleteMany()
     await prisma.studio.create({ data: {
       name: '正式工作室',
-      registrationCodeHash: hashToken('registration-token'),
       accessTokenHash: hashToken('studio-access-token'),
     } })
     await prisma.admin.create({ data: {
@@ -54,17 +53,27 @@ describe('production end-to-end flow', () => {
   }
 
   it('moves tasks through user, studio, and administrator workflows', async () => {
-    const registered = await app.inject({
-      method: 'POST', url: '/api/v1/auth/register/registration-token',
-      headers: writeHeaders(), payload: { username: 'demo', password: 'user-password' },
+    const adminLogin = await app.inject({
+      method: 'POST', url: '/api/v1/auth/admin/login', headers: writeHeaders(),
+      payload: { username: 'root', password: 'admin-password' },
     })
-    expect(registered.statusCode).toBe(201)
+    expect(adminLogin.statusCode).toBe(200)
+    const adminCookie = cookiesFrom(adminLogin)
+
+    const createdKey = await app.inject({
+      method: 'POST', url: '/api/v1/admin/user-keys',
+      headers: writeHeaders(adminCookie), payload: { note: '端到端客户' },
+    })
+    expect(createdKey.statusCode).toBe(201)
+    const accessKey = createdKey.json().accessKey as string
+    const userId = createdKey.json().user.id as string
 
     const login = await app.inject({
-      method: 'POST', url: '/api/v1/auth/user/login',
-      headers: writeHeaders(), payload: { username: 'demo', password: 'user-password' },
+      method: 'POST', url: '/api/v1/auth/user/key-login',
+      headers: writeHeaders(), payload: { key: accessKey },
     })
     expect(login.statusCode).toBe(200)
+    expect(login.json().principal.userLabel).toBe('端到端客户')
     const userCookie = cookiesFrom(login)
 
     const batch = await app.inject({
@@ -92,6 +101,7 @@ describe('production end-to-end flow', () => {
     const queue = await app.inject({
       method: 'GET', url: '/api/v1/studio/tasks', headers: { cookie: studioCookie },
     })
+    expect(queue.json().items[0].userLabel).toBe('端到端客户')
     const [first, second] = queue.json().items as Array<{ publicId: string }>
 
     const opened = await app.inject({
@@ -116,12 +126,6 @@ describe('production end-to-end flow', () => {
     })
     expect(userDetail.json()).toMatchObject({ status: 'success', feedback: '支付成功' })
 
-    const adminLogin = await app.inject({
-      method: 'POST', url: '/api/v1/auth/admin/login', headers: writeHeaders(),
-      payload: { username: 'root', password: 'admin-password' },
-    })
-    const adminCookie = cookiesFrom(adminLogin)
-    const userId = login.json().principal.id as string
     const disabled = await app.inject({
       method: 'PATCH', url: `/api/v1/admin/users/${userId}`,
       headers: writeHeaders(adminCookie), payload: { enabled: false },
