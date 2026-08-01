@@ -67,7 +67,7 @@ export async function registerAdminRoutes(app: FastifyInstance) {
       const adminId = adminPrincipal(request.principal)
       const { userId } = request.params as { userId: string }
       const body = updateUserKeySchema.parse(request.body)
-      return adminService.updateUserKey(adminId, userId, body.note)
+      return adminService.updateUserKey(adminId, userId, body)
     },
   )
 

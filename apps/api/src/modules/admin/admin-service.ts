@@ -283,13 +283,29 @@ export const adminService = {
     return { user: serializeUser(user), accessKey }
   },
 
-  async updateUserKey(adminId: string, userId: string, note?: string) {
+  async updateUserKey(adminId: string, userId: string, input: { note?: string; key?: string }) {
     return prisma.$transaction(async (transaction) => {
       const user = await transaction.user.findUnique({ where: { id: userId } })
       if (!user) throw notFoundError()
+
+      const data: Record<string, unknown> = {}
+      if (input.note !== undefined) data.note = input.note?.trim() || null
+      if (input.key) {
+        const normalizedKey = normalizeUserAccessKey(input.key)
+        const existing = await transaction.user.findUnique({ where: { accessKeyHash: hashUserAccessKey(normalizedKey) } })
+        if (existing && existing.id !== userId) {
+          throw new AppError(409, 'USER_KEY_EXISTS', '该密钥已存在，请更换')
+        }
+        const { keyPrefix, keySuffix } = keyDisplayParts(normalizedKey)
+        data.accessKeyHash = hashUserAccessKey(normalizedKey)
+        data.accessKeyCipher = encryptAccessKey(normalizedKey)
+        data.keyPrefix = keyPrefix
+        data.keySuffix = keySuffix
+      }
+
       const updated = await transaction.user.update({
         where: { id: userId },
-        data: { note: note?.trim() || null },
+        data,
         include: userCountInclude,
       })
       await writeAudit(transaction, {

@@ -65,9 +65,9 @@ export async function createUserKey(note?: string, key?: string) {
   }))
 }
 
-export async function updateUserKey(userId: string, note: string) {
+export async function updateUserKey(userId: string, data: { note?: string; key?: string }) {
   return adminUserSchema.parse(await apiRequest(`/api/v1/admin/user-keys/${encodeURIComponent(userId)}`, {
-    method: 'PATCH', body: { note },
+    method: 'PATCH', body: data,
   }))
 }
 

@@ -32,6 +32,7 @@ export const updateUserEnabledSchema = z.object({
 
 export const updateUserKeySchema = z.object({
   note: z.string().trim().max(200, '备注最多 200 个字符').optional(),
+  key: z.string().trim().regex(/^\S{4,64}$/, '密钥需 4-64 位非空白字符').optional(),
 })
 
 export const userKeyRevealResponseSchema = z.object({
