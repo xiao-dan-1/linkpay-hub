@@ -12,10 +12,6 @@ import { formatDate as formatTime } from './TaskList'
 
 type AtModalData = { title: string; result: AtCheckResult }
 
-function dash(v: string | null | undefined): string {
-  return v || '—'
-}
-
 export function TaskDetails({
   task, user, actions, onClose,
 }: { task: Task | null; user?: User; actions?: ReactNode; onClose: () => void }) {
@@ -44,67 +40,88 @@ export function TaskDetails({
   if (!task) return null
 
   const info = task.at ? extractAccountInfo(task.at) : null
+  const hasUser = !!(user || task.userLabel)
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="modal task-detail-modal" role="dialog" aria-modal="true" aria-label="任务详情">
-        {/* header */}
-        <header className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+        <header className="modal-header" style={{ padding: '16px 20px' }}>
+          <div className="td-header-left">
+            <span className="task-id" style={{ fontSize: 13 }}>{task.id}</span>
             <StatusBadge status={task.status} />
-            <span className="task-id">{task.id}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
             {task.at ? (
               <button className="button compact secondary" disabled={loading} onClick={() => void handleCheck()}>
-                <Activity size={14} className={loading ? 'icon-pulse' : ''} />{loading ? '查询中' : '测活'}
+                <Activity size={14} className={loading ? 'icon-pulse' : ''} />测活
               </button>
             ) : null}
+            <button className="icon-button" aria-label="关闭" onClick={onClose}><X size={18} /></button>
           </div>
-          <button className="icon-button" aria-label="关闭" onClick={onClose}><X size={20} /></button>
         </header>
 
-        <div className="modal-body">
-          {/* URL + QR side by side */}
-          <div className="td-link-row">
-            <div className="td-link-info">
-              <a href={task.url} target="_blank" rel="noreferrer" className="td-url">{task.url}<ExternalLink size={13} /></a>
+        <div className="modal-body" style={{ padding: '0 20px 20px' }}>
+
+          {/* QR + Link card */}
+          <div className="td-card">
+            <div className="td-card-body">
+              <a href={task.url} target="_blank" rel="noreferrer" className="td-card-url">{task.url}<ExternalLink size={13} /></a>
             </div>
-            <img className="td-qr" src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(task.url)}`} alt="二维码" />
+            <img className="td-card-qr" src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(task.url)}`} alt="二维码" />
           </div>
 
-          {/* stat cards */}
-          <div className="at-stat-grid">
-            <div className="at-stat-item"><span className="at-stat-label">提交时间</span><span className="at-stat-value">{formatTime(task.submittedAt)}</span></div>
-            <div className="at-stat-item"><span className="at-stat-label">开始处理</span><span className="at-stat-value">{formatTime(task.processingStartedAt)}</span></div>
-            <div className="at-stat-item"><span className="at-stat-label">完成时间</span><span className="at-stat-value">{formatTime(task.completedAt)}</span></div>
-            <div className="at-stat-item">
-              <span className="at-stat-label">处理时限</span>
-              <span className="at-stat-value">
-                {task.status === 'queued' || task.status === 'processing' ? <TaskCountdown submittedAt={task.submittedAt} /> : '—'}
+          {/* info rows */}
+          <div className="td-info-rows">
+            <div className="td-info-row">
+              <span className="td-info-label">提交时间</span>
+              <span className="td-info-value">{formatTime(task.submittedAt)}</span>
+            </div>
+            <div className="td-info-row">
+              <span className="td-info-label">处理时限</span>
+              <span className="td-info-value">
+                {task.status === 'queued' || task.status === 'processing'
+                  ? <TaskCountdown submittedAt={task.submittedAt} />
+                  : <span className="muted">—</span>}
               </span>
             </div>
+            <div className="td-info-row">
+              <span className="td-info-label">开始处理</span>
+              <span className="td-info-value">{formatTime(task.processingStartedAt)}</span>
+            </div>
+            <div className="td-info-row">
+              <span className="td-info-label">完成时间</span>
+              <span className="td-info-value">{formatTime(task.completedAt)}</span>
+            </div>
+            {hasUser ? (
+              <div className="td-info-row">
+                <span className="td-info-label">提交用户</span>
+                <span className="td-info-value">{(user?.note || user?.maskedKey) ?? task.userLabel}</span>
+              </div>
+            ) : null}
+            {info?.email ? (
+              <div className="td-info-row">
+                <span className="td-info-label">账号</span>
+                <span className="td-info-value td-email">{info.email}</span>
+              </div>
+            ) : null}
+            {info?.planType ? (
+              <div className="td-info-row">
+                <span className="td-info-label">套餐</span>
+                <span className="td-info-value">{info.planType}{info.isExpired ? <span style={{ color: 'var(--failed)', marginLeft: 8, fontSize: 12 }}>已过期</span> : null}</span>
+              </div>
+            ) : null}
           </div>
 
-          {/* account info */}
-          {info ? (
-            <div className="at-stat-grid" style={{ marginTop: 8 }}>
-              <div className="at-stat-item"><span className="at-stat-label">账号</span><span className="at-stat-value" style={{ fontSize: 13, fontFamily: '"SFMono-Regular",Consolas,monospace' }}>{info.email || '—'}</span></div>
-              <div className="at-stat-item"><span className="at-stat-label">套餐</span><span className="at-stat-value">{dash(info.planType)}</span></div>
-              <div className="at-stat-item"><span className="at-stat-label">Token</span><span className="at-stat-value" style={{ color: info.isExpired ? 'var(--failed)' : undefined }}>{info.isExpired ? '已过期' : '有效'}</span></div>
-              {(user || task.userLabel) ? <div className="at-stat-item"><span className="at-stat-label">提交用户</span><span className="at-stat-value">{dash(user?.note || user?.maskedKey || task.userLabel)}</span></div> : null}
-            </div>
-          ) : (user || task.userLabel) ? (
-            <div className="at-stat-grid" style={{ marginTop: 8 }}>
-              {(user || task.userLabel) ? <div className="at-stat-item"><span className="at-stat-label">提交用户</span><span className="at-stat-value">{dash(user?.note || user?.maskedKey || task.userLabel)}</span></div> : null}
-            </div>
-          ) : null}
-
           {/* feedback */}
-          {task.feedback ? <div className="feedback-content" style={{ marginTop: 12 }}>{task.feedback}</div> : null}
+          {task.feedback ? (
+            <div className="td-feedback">{task.feedback}</div>
+          ) : null}
         </div>
 
         {toastMsg ? <div className="toast-region"><div className="toast" role="status">{toastMsg}</div></div> : null}
         <AtResultModal data={atModal} onClose={() => setAtModal(null)} />
-        {actions ? <footer className="modal-actions">{actions}</footer> : null}
+        {actions ? <footer className="modal-actions" style={{ padding: '12px 20px' }}>{actions}</footer> : null}
       </div>
     </div>
   )

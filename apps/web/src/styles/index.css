@@ -905,20 +905,31 @@ a {
   border-color: var(--primary);
 }
 
-/* task detail link + qr row */
-.td-link-row {
+/* task detail */
+.td-header-left {
   display: flex;
-  gap: 16px;
-  margin-bottom: 14px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 12px;
 }
 
-.td-link-info {
+/* link + qr card */
+.td-card {
+  display: flex;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.td-card-body {
   flex: 1;
   min-width: 0;
 }
 
-.td-url {
+.td-card-url {
   display: block;
   color: var(--primary-dark);
   text-decoration: none;
@@ -926,17 +937,67 @@ a {
   font-family: "SFMono-Regular", Consolas, monospace;
   font-weight: 600;
   word-break: break-all;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
-.td-url:hover { color: var(--primary); }
+.td-card-url:hover { color: var(--primary); }
 
-.td-qr {
-  flex: 0 0 120px;
-  width: 120px;
-  height: 120px;
+.td-card-qr {
+  flex: 0 0 140px;
+  width: 140px;
+  height: 140px;
   border: 1px solid var(--border);
   border-radius: 10px;
+  background: #fff;
+}
+
+/* info rows */
+.td-info-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.td-info-row {
+  display: flex;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 16px;
+}
+
+.td-info-row:last-child { border-bottom: 0; }
+
+.td-info-label {
+  flex: 0 0 72px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.td-info-value {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.td-email {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  color: var(--primary-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-feedback {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--primary);
+  border-radius: 0 8px 8px 0;
+  background: var(--primary-soft);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
 }
 
 /* ---------- AT detail modal ---------- */
