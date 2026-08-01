@@ -222,13 +222,15 @@ export const adminService = {
         throw new AppError(409, 'TASK_NOT_EDITABLE', '只有排队中或失败的任务可以编辑')
       }
 
-      const isFailed = task.status === 'failed'
+      const isExpired = task.status === 'queued'
+        && task.submittedAt.getTime() + 15 * 60 * 1000 < Date.now()
+      const needsRequeue = task.status === 'failed' || isExpired
       const data: Record<string, unknown> = {
         url: input.url,
         at: input.at ?? null,
         version: { increment: 1 },
       }
-      if (isFailed) {
+      if (needsRequeue) {
         data.status = 'queued'
         data.submittedAt = new Date()
         data.processingStartedAt = null
@@ -238,7 +240,6 @@ export const adminService = {
       const updated = await transaction.task.updateMany({
         where: {
           id: task.id,
-          status: isFailed ? 'failed' : 'queued',
           version: input.version,
         },
         data,

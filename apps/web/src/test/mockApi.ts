@@ -170,7 +170,8 @@ export function installMockApi() {
         if (task.status !== 'queued' && task.status !== 'failed') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中或失败的任务可以编辑', requestId: 'test-request' } }, 409)
         task.url = String(body.url)
         task.at = typeof body.at === 'string' ? body.at : undefined
-        if (task.status === 'failed') {
+        const expired = task.status === 'queued' && new Date(task.submittedAt).getTime() + 15 * 60 * 1000 < Date.now()
+        if (task.status === 'failed' || expired) {
           task.status = 'queued'
           task.submittedAt = new Date().toISOString()
           task.processingStartedAt = undefined
@@ -251,7 +252,8 @@ export function installMockApi() {
         if (task.status !== 'queued' && task.status !== 'failed') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中或失败的任务可以编辑', requestId: 'test-request' } }, 409)
         task.url = String(body.url)
         task.at = typeof body.at === 'string' ? body.at : undefined
-        if (task.status === 'failed') {
+        const expired = task.status === 'queued' && new Date(task.submittedAt).getTime() + 15 * 60 * 1000 < Date.now()
+        if (task.status === 'failed' || expired) {
           task.status = 'queued'
           task.submittedAt = new Date().toISOString()
           task.processingStartedAt = undefined
