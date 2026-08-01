@@ -30,6 +30,10 @@ export const updateUserEnabledSchema = z.object({
   enabled: z.boolean(),
 })
 
+export const updateUserKeySchema = z.object({
+  note: z.string().trim().max(200, '备注最多 200 个字符').optional(),
+})
+
 export const userKeyRevealResponseSchema = z.object({
   accessKey: z.string(),
 })

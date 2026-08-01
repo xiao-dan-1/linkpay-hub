@@ -1520,6 +1520,16 @@ a {
   font-weight: 700;
 }
 
+.key-edit-input {
+  min-width: 140px;
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  outline: 0;
+  font-size: 13px;
+}
+
 .key-modal {
   width: min(520px, 100%);
 }

@@ -1,6 +1,7 @@
 import {
   createUserKeySchema,
   taskListQuerySchema,
+  updateUserKeySchema,
   trendsQuerySchema,
   updateStudioSchema,
   updateUserEnabledSchema,
@@ -56,6 +57,17 @@ export async function registerAdminRoutes(app: FastifyInstance) {
       const adminId = adminPrincipal(request.principal)
       const body = createUserKeySchema.parse(request.body)
       return reply.code(201).send(await adminService.createUserKey(adminId, body.note, body.key))
+    },
+  )
+
+  app.patch(
+    '/api/v1/admin/user-keys/:userId',
+    { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
+    async (request) => {
+      const adminId = adminPrincipal(request.principal)
+      const { userId } = request.params as { userId: string }
+      const body = updateUserKeySchema.parse(request.body)
+      return adminService.updateUserKey(adminId, userId, body.note)
     },
   )
 

@@ -283,6 +283,25 @@ export const adminService = {
     return { user: serializeUser(user), accessKey }
   },
 
+  async updateUserKey(adminId: string, userId: string, note?: string) {
+    return prisma.$transaction(async (transaction) => {
+      const user = await transaction.user.findUnique({ where: { id: userId } })
+      if (!user) throw notFoundError()
+      const updated = await transaction.user.update({
+        where: { id: userId },
+        data: { note: note?.trim() || null },
+        include: userCountInclude,
+      })
+      await writeAudit(transaction, {
+        actorId: adminId,
+        action: 'user.key_updated',
+        targetType: 'user',
+        targetId: userId,
+      })
+      return serializeUser(updated)
+    })
+  },
+
   async updateUserEnabled(adminId: string, userId: string, enabled: boolean) {
     return prisma.$transaction(async (transaction) => {
       const user = await transaction.user.findUnique({ where: { id: userId } })

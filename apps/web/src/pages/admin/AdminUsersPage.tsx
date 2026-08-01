@@ -1,6 +1,7 @@
 import {
   Copy,
   KeyRound,
+  Pen,
   Plus,
   Search,
   ShieldCheck,
@@ -15,7 +16,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { createUserKey, deleteUser, listUsers, revealUserKey, setUserEnabled } from '../../api/admin'
+import { createUserKey, deleteUser, listUsers, revealUserKey, setUserEnabled, updateUserKey } from '../../api/admin'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { ToastRegion } from '../../components/ToastRegion'
 import { formatDate } from '../../components/TaskList'
@@ -87,6 +88,8 @@ export function AdminUsersPage() {
   const [creating, setCreating] = useState(false)
   const [created, setCreated] = useState<Awaited<ReturnType<typeof createUserKey>> | null>(null)
   const [feedback, setFeedback] = useState('')
+  const [editing, setEditing] = useState<string | null>(null)
+  const [editNote, setEditNote] = useState('')
 
   const loadUsers = useCallback(async () => {
     try { setUsers(await listUsers(search.trim())) }
@@ -135,6 +138,22 @@ export function AdminUsersPage() {
     }
   }
 
+  const saveNote = async (user: User) => {
+    try {
+      const updated = await updateUserKey(user.id, editNote)
+      setUsers((c) => c.map((u) => u.id === updated.id ? updated : u))
+      setFeedback(`${userDisplayName(user)} 备注已更新`)
+      setEditing(null)
+    } catch (cause) {
+      setFeedback(cause instanceof Error ? cause.message : '更新失败')
+    }
+  }
+
+  const startEdit = (user: User) => {
+    setEditing(user.id)
+    setEditNote(user.note || '')
+  }
+
   const copyKey = async (user: User) => {
     try {
       const { accessKey } = await revealUserKey(user.id)
@@ -168,7 +187,7 @@ export function AdminUsersPage() {
         <div className="panel-heading task-panel-heading"><div><h2>用户访问密钥</h2><p>完整密钥只在创建成功时展示一次；停用会注销该密钥的现有会话。</p></div><label className="search-field"><Search size={16} /><span className="sr-only">搜索密钥</span><input aria-label="搜索密钥" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索备注、前缀或尾号" /></label></div>
         <div className="user-table-wrap"><table className="user-table key-table"><thead><tr><th>密钥</th><th>备注</th><th>状态</th><th>创建时间</th><th>最近使用</th><th>任务数</th><th>操作</th></tr></thead><tbody>{users.map((user) => {
           const name = userDisplayName(user)
-          return <tr key={user.id}><td data-label="密钥"><span className="key-identity"><span className="user-avatar"><KeyRound size={16} /></span><code className="key-mask">{user.maskedKey}</code></span></td><td data-label="备注"><span className={user.note ? 'key-note' : 'muted'}>{user.note || '—'}</span></td><td data-label="状态"><span className={`account-status ${user.enabled ? 'enabled' : 'disabled'}`}>{user.enabled ? '已启用' : '已停用'}</span></td><td data-label="创建时间">{formatDate(user.createdAt)}</td><td data-label="最近使用">{formatDate(user.lastUsedAt ?? undefined)}</td><td data-label="任务数">{user.taskCount}</td><td data-label="操作"><span className="row-actions"><button className="icon-button" aria-label={`复制 ${name}`} onClick={() => void copyKey(user)}><Copy size={16} /></button>{user.enabled ? <button className="button danger compact" aria-label={`停用 ${name}`} onClick={() => setPendingDisable(user)}><UserRoundX size={16} />停用</button> : <button className="button secondary compact" aria-label={`启用 ${name}`} onClick={() => void setEnabled(user, true)}><UserRoundCheck size={16} />启用</button>}<button className="icon-button danger-icon" aria-label={`删除 ${name}`} onClick={() => setPendingDelete(user)}><Trash2 size={16} /></button></span></td></tr>
+          return <tr key={user.id}><td data-label="密钥"><span className="key-identity"><span className="user-avatar"><KeyRound size={16} /></span><code className="key-mask">{user.maskedKey}</code></span></td><td data-label="备注">{editing === user.id ? <span className="row-actions"><input className="key-edit-input" value={editNote} onChange={e => setEditNote(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void saveNote(user); if (e.key === 'Escape') setEditing(null) }} autoFocus /></span> : <span className={user.note ? 'key-note' : 'muted'}>{user.note || '—'}</span>}</td><td data-label="状态"><span className={`account-status ${user.enabled ? 'enabled' : 'disabled'}`}>{user.enabled ? '已启用' : '已停用'}</span></td><td data-label="创建时间">{formatDate(user.createdAt)}</td><td data-label="最近使用">{formatDate(user.lastUsedAt ?? undefined)}</td><td data-label="任务数">{user.taskCount}</td><td data-label="操作"><span className="row-actions">{editing === user.id ? <><button className="button compact" onClick={() => void saveNote(user)}>保存</button><button className="button compact ghost" onClick={() => setEditing(null)}>取消</button></> : <><button className="icon-button" aria-label={`编辑备注 ${name}`} onClick={() => startEdit(user)}><Pen size={15} /></button><button className="icon-button" aria-label={`复制 ${name}`} onClick={() => void copyKey(user)}><Copy size={16} /></button>{user.enabled ? <button className="button danger compact" aria-label={`停用 ${name}`} onClick={() => setPendingDisable(user)}><UserRoundX size={16} />停用</button> : <button className="button secondary compact" aria-label={`启用 ${name}`} onClick={() => void setEnabled(user, true)}><UserRoundCheck size={16} />启用</button>}<button className="icon-button danger-icon" aria-label={`删除 ${name}`} onClick={() => setPendingDelete(user)}><Trash2 size={16} /></button></>}</span></td></tr>
         })}</tbody></table></div>
       </section>
 
