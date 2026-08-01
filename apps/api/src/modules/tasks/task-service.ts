@@ -200,6 +200,18 @@ export const taskService = {
       }
 
       const isFailed = task.status === 'failed'
+      const data: Record<string, unknown> = {
+        url: input.url,
+        at: input.at ?? null,
+        version: { increment: 1 },
+      }
+      if (isFailed) {
+        data.status = 'queued'
+        data.submittedAt = new Date()
+        data.processingStartedAt = null
+        data.completedAt = null
+        data.feedback = null
+      }
       const updated = await transaction.task.updateMany({
         where: {
           id: task.id,
@@ -207,16 +219,7 @@ export const taskService = {
           status: isFailed ? 'failed' : 'queued',
           version: input.version,
         },
-        data: {
-          url: input.url,
-          at: input.at ?? null,
-          status: 'queued',
-          submittedAt: new Date(),
-          processingStartedAt: null,
-          completedAt: null,
-          feedback: null,
-          version: { increment: 1 },
-        },
+        data,
       })
       if (updated.count !== 1) {
         throw new AppError(409, 'TASK_STATE_CONFLICT', '任务已被其他操作修改，请刷新后重试')

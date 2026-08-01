@@ -105,7 +105,7 @@ export function AdminTasksPage() {
             <button className="button danger" disabled={saving} onClick={() => { setEditingTask(null); setDeletingTask(editingTask) }}>删除任务</button>
           ) : null}
           <button className="button" disabled={saving || !editUrl.trim()} onClick={() => void saveEdit()}>
-            <Pen size={17} />{saving ? '保存中…' : '保存修改'}
+            <Pen size={17} />{saving ? '保存中…' : (editingTask?.status === 'failed' ? '保存并提交' : '保存')}
           </button>
         </div>
       </ModalFrame>
