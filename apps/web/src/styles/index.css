@@ -743,9 +743,9 @@ a {
 .queue-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-height: 52px;
-  padding: 8px 16px;
+  gap: 0;
+  min-height: 48px;
+  padding: 8px 0;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
@@ -757,20 +757,29 @@ a {
 }
 
 .queue-seq {
-  flex: 0 0 28px;
+  flex: 0 0 36px;
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 12px;
   font-weight: 700;
   color: var(--text-muted);
   text-align: center;
+  padding: 0 4px;
+}
+
+/* status column */
+.queue-row .status-badge {
+  flex: 0 0 72px;
+  justify-content: center;
+  margin: 0 8px;
 }
 
 .queue-account {
-  flex: 0 1 auto;
+  flex: 0 0 260px;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 0 4px;
 }
 
 .queue-email {
@@ -779,6 +788,8 @@ a {
   font-weight: 650;
   color: var(--text);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .queue-plan {
@@ -815,6 +826,7 @@ a {
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+  padding: 0 8px;
 }
 
 .queue-link:hover {
@@ -822,7 +834,7 @@ a {
 }
 
 .queue-time {
-  flex: 0 0 130px;
+  flex: 0 0 125px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -830,6 +842,7 @@ a {
   font-size: 11px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  padding-right: 4px;
 }
 
 .queue-expired {
@@ -845,6 +858,7 @@ a {
   flex: 0 0 auto;
   display: flex;
   gap: 4px;
+  padding: 0 8px;
 }
 
 /* unified textarea style */
@@ -1101,14 +1115,15 @@ a {
 @media (max-width: 900px) {
   .queue-row {
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 14px;
+    gap: 6px;
+    padding: 10px 12px;
   }
+  .queue-row .status-badge { flex: 0 0 auto; margin: 0; }
   .queue-seq { order: 1; }
   .queue-account { order: 2; flex: 1 1 auto; }
-  .queue-link { order: 3; flex: 1 1 100%; }
-  .queue-time { order: 4; flex: 1 1 auto; flex-direction: row; gap: 8px; align-items: center; }
-  .queue-actions { order: 5; }
+  .queue-link { order: 3; flex: 1 1 100%; padding: 0; }
+  .queue-time { order: 4; flex: 1 1 auto; flex-direction: row; gap: 8px; align-items: center; padding: 0; }
+  .queue-actions { order: 5; padding: 0; }
 }
 
 .empty-state {

@@ -143,9 +143,9 @@ export function UserWorkbenchPage() {
           <article className="panel submit-panel">
             <div className="panel-heading"><div><p className="eyebrow">TASK SUBMIT</p><h2>创建任务</h2><p>每行输入一条支付链接，数量不限，系统会自动分批提交。</p></div></div>
             <label className="textarea-label" htmlFor="task-at">AT Token</label>
-            <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="每行一个 AT，与链接一一对应" />
+            <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="eyJhbGci...（每行一个，与链接一一对应）" />
             <label className="textarea-label" htmlFor="task-links">支付链接</label>
-            <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://example.com/payment-1\nhttps://example.com/payment-2'} />
+            <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} />
             <div className="validation-row" aria-live="polite">
               <span>有效 {parsed.valid.length} 条</span>
               {parsed.duplicateCount ? <span>已去重 {parsed.duplicateCount} 条</span> : null}
