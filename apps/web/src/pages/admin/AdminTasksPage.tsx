@@ -92,12 +92,10 @@ export function AdminTasksPage() {
         <h2>编辑任务</h2>
         <p className="muted">{editingTask?.id}</p>
         <div className="key-create-form">
-          <label htmlFor="edit-at">AT Token</label>
-          <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
-          <small>{editAt.length}/8192</small>
-          {editAt.trim() ? (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-              <button className="button compact ghost" style={{ minWidth: 180 }} disabled={generating} onClick={async () => {
+          <label htmlFor="edit-at">
+            AT Token
+            {editAt.trim() ? (
+              <button className="button compact ghost" style={{ marginLeft: 10, fontSize: 12 }} disabled={generating} onClick={async () => {
                 setGenerating(true)
                 try {
                   const res = await generatePayLink(editAt.trim())
@@ -107,10 +105,12 @@ export function AdminTasksPage() {
                   setFeedback(e instanceof Error ? e.message : '生成失败')
                 } finally { setGenerating(false) }
               }}>
-                <Link size={14} />{generating ? '生成中…' : '生成链接'}
+                <Link size={13} />{generating ? '生成中…' : '生成链接 ↓'}
               </button>
-            </div>
-          ) : null}
+            ) : null}
+          </label>
+          <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
+          <small>{editAt.length}/8192</small>
         </div>
         <div className="key-create-form">
           <label htmlFor="edit-url">支付链接</label>

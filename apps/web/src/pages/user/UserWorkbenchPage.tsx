@@ -196,11 +196,10 @@ export function UserWorkbenchPage() {
         <section className="workbench-grid">
           <article className="panel submit-panel">
             <div className="panel-heading"><div><p className="eyebrow">TASK SUBMIT</p><h2>创建任务</h2><p>每行输入一条支付链接，数量不限，系统会自动分批提交。</p></div></div>
-            <label className="textarea-label" htmlFor="task-at">AT Token</label>
-            <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="eyJhbGci...（每行一个，与链接一一对应）" />
-            {atInput.trim() ? (
-              <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
-                <button className="button compact ghost" style={{ minWidth: 200 }} disabled={creatingLink} onClick={async () => {
+            <label className="textarea-label" htmlFor="task-at">
+              AT Token
+              {atInput.trim() ? (
+                <button className="button compact ghost" style={{ marginLeft: 10, fontSize: 12 }} disabled={creatingLink} onClick={async () => {
                   setCreatingLink(true)
                   try {
                     const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
@@ -220,10 +219,11 @@ export function UserWorkbenchPage() {
                     setFeedback(e instanceof Error ? e.message : '生成失败')
                   } finally { setCreatingLink(false) }
                 }}>
-                  <Link size={14} />{creatingLink ? '生成中…' : '从 AT 生成链接'}
+                  <Link size={13} />{creatingLink ? '生成中…' : '生成链接 ↓'}
                 </button>
-              </div>
-            ) : null}
+              ) : null}
+            </label>
+            <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="eyJhbGci...（每行一个，与链接一一对应）" />
             <label className="textarea-label" htmlFor="task-links">支付链接</label>
             <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} />
           <div className="validation-row" aria-live="polite">
@@ -270,12 +270,10 @@ export function UserWorkbenchPage() {
         <h2>编辑任务</h2>
         <p className="muted">{editingTask?.id}</p>
         <div className="key-create-form">
-          <label htmlFor="edit-at">AT Token</label>
-          <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
-          <small>{editAt.length}/8192</small>
-          {editAt.trim() ? (
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-              <button className="button compact ghost" style={{ minWidth: 180 }} disabled={generating} onClick={async () => {
+          <label htmlFor="edit-at">
+            AT Token
+            {editAt.trim() ? (
+              <button className="button compact ghost" style={{ marginLeft: 10, fontSize: 12 }} disabled={generating} onClick={async () => {
                 setGenerating(true)
                 try {
                   const res = await generatePayLink(editAt.trim())
@@ -285,10 +283,12 @@ export function UserWorkbenchPage() {
                   setFeedback(e instanceof Error ? e.message : '生成失败')
                 } finally { setGenerating(false) }
               }}>
-                <Link size={14} />{generating ? '生成中…' : '生成链接'}
+                <Link size={13} />{generating ? '生成中…' : '生成链接 ↓'}
               </button>
-            </div>
-          ) : null}
+            ) : null}
+          </label>
+          <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
+          <small>{editAt.length}/8192</small>
         </div>
         <div className="key-create-form">
           <label htmlFor="edit-url">支付链接</label>
