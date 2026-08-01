@@ -19,6 +19,7 @@ import { TaskDetails } from '../../components/TaskDetails'
 import { TaskList } from '../../components/TaskList'
 import { ToastRegion } from '../../components/ToastRegion'
 import type { Task, TaskStatus } from '../../domain/models'
+import { extractAccountInfo } from '../../domain/jwt-decode'
 import { parseSubmittedLinks } from '../../domain/taskRules'
 
 type StatusFilter = 'all' | TaskStatus
@@ -151,7 +152,13 @@ export function UserWorkbenchPage() {
               {parsed.duplicateCount ? <span>已去重 {parsed.duplicateCount} 条</span> : null}
               {parsed.blankCount ? <span>空行 {parsed.blankCount} 条</span> : null}
               {parsed.invalid.length ? <span className="validation-error">无效 {parsed.invalid.length} 条</span> : null}
-              {atInput.trim() ? <span>AT {atInput.split(/\r?\n/).filter(l => l.trim()).length} 条</span> : null}
+              {atInput.trim() ? (() => {
+                const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
+                if (atLines.length === 0) return null
+                const info = extractAccountInfo(atLines[0])
+                if (info.email) return <span>关联: {info.email}</span>
+                return <span>AT {atLines.length} 条</span>
+              })() : null}
             </div>
             {parsed.invalid.length ? <div className="invalid-links" role="alert">无效链接：{parsed.invalid.join('、')}</div> : null}
             <div className="submit-footer"><span>同次重复链接自动合并，超过 200 条将自动分批。</span><button className="button submit-button" disabled={!canSubmit} onClick={() => void onSubmit()}><Send size={17} />{submitLabel}</button></div>
