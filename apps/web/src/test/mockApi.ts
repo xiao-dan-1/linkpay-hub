@@ -168,8 +168,8 @@ export function installMockApi() {
       if (method === 'PATCH') {
         const task = mockApiState.tasks[index]
         if (task.status !== 'queued') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中的任务可以编辑', requestId: 'test-request' } }, 409)
-        task.url = body.url
-        task.at = body.at ?? undefined
+        task.url = String(body.url)
+        task.at = typeof body.at === 'string' ? body.at : undefined
         task.version = (task.version ?? 0) + 1
         return json(apiTask(task))
       }
@@ -236,8 +236,24 @@ export function installMockApi() {
       return json({ items: tasks.map(apiTask), page: { hasMore: false, nextCursor: null } })
     }
     if (path.startsWith('/api/v1/admin/tasks/')) {
-      const task = mockApiState.tasks.find((item) => item.id === decodeURIComponent(path.split('/').at(-1)!))
-      return task ? json(apiTask(task)) : json({ error: { code: 'NOT_FOUND', message: '任务不存在', requestId: 'test-request' } }, 404)
+      const id = decodeURIComponent(path.split('/').at(-1)!)
+      const index = mockApiState.tasks.findIndex((item) => item.id === id)
+      if (index < 0) return json({ error: { code: 'NOT_FOUND', message: '任务不存在', requestId: 'test-request' } }, 404)
+      if (method === 'PATCH') {
+        const task = mockApiState.tasks[index]
+        if (task.status !== 'queued') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中的任务可以编辑', requestId: 'test-request' } }, 409)
+        task.url = String(body.url)
+        task.at = typeof body.at === 'string' ? body.at : undefined
+        task.version = (task.version ?? 0) + 1
+        return json(apiTask(task))
+      }
+      if (method === 'DELETE') {
+        const task = mockApiState.tasks[index]
+        if (task.status !== 'queued' && task.status !== 'failed') return json({ error: { code: 'TASK_NOT_DELETABLE', message: '只有排队中或失败的任务可以删除', requestId: 'test-request' } }, 409)
+        mockApiState.tasks.splice(index, 1)
+        return json(null, 204)
+      }
+      return json(apiTask(mockApiState.tasks[index]))
     }
     if (path === '/api/v1/admin/users') {
       const search = url.searchParams.get('search')?.toLowerCase()

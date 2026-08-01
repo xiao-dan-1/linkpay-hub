@@ -1,4 +1,4 @@
-import type { TaskStatus } from '@linkpay/contracts'
+import type { TaskStatus, UpdateTaskInput } from '@linkpay/contracts'
 import { config } from '../../config.js'
 import { prisma } from '../../db.js'
 import type { Prisma } from '../../generated/prisma/client.js'
@@ -211,6 +211,68 @@ export const adminService = {
     })
     if (!task) throw notFoundError()
     return serializeTask(task)
+  },
+
+  async updateTask(adminId: string, publicId: string, input: UpdateTaskInput) {
+    return prisma.$transaction(async (transaction) => {
+      const task = await transaction.task.findUnique({ where: { publicId } })
+      if (!task) throw notFoundError()
+
+      if (task.status !== 'queued') {
+        throw new AppError(409, 'TASK_NOT_EDITABLE', '只有排队中的任务可以编辑')
+      }
+
+      const updated = await transaction.task.updateMany({
+        where: {
+          id: task.id,
+          status: 'queued',
+          version: input.version,
+        },
+        data: {
+          url: input.url,
+          at: input.at ?? null,
+          version: { increment: 1 },
+        },
+      })
+      if (updated.count !== 1) {
+        throw new AppError(409, 'TASK_STATE_CONFLICT', '任务已被其他操作修改，请刷新后重试')
+      }
+
+      await writeAudit(transaction, {
+        actorId: adminId,
+        action: 'task.updated',
+        targetType: 'task',
+        targetId: task.id,
+        metadata: { publicId: task.publicId },
+      })
+
+      const current = await transaction.task.findUniqueOrThrow({
+        where: { id: task.id },
+        include: { user: { select: userIdentitySelect } },
+      })
+      return serializeTask(current)
+    })
+  },
+
+  async deleteTask(adminId: string, publicId: string) {
+    return prisma.$transaction(async (transaction) => {
+      const task = await transaction.task.findUnique({ where: { publicId } })
+      if (!task) throw notFoundError()
+
+      if (task.status !== 'queued' && task.status !== 'failed') {
+        throw new AppError(409, 'TASK_NOT_DELETABLE', '只有排队中或失败的任务可以删除')
+      }
+
+      await transaction.task.delete({ where: { id: task.id } })
+
+      await writeAudit(transaction, {
+        actorId: adminId,
+        action: 'task.deleted',
+        targetType: 'task',
+        targetId: task.id,
+        metadata: { publicId: task.publicId, status: task.status },
+      })
+    })
   },
 
   async listUsers(input: { search?: string; cursor?: string; limit: number }) {

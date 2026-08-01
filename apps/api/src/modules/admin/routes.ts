@@ -1,6 +1,7 @@
 import {
   createUserKeySchema,
   taskListQuerySchema,
+  updateTaskSchema,
   updateUserKeySchema,
   trendsQuerySchema,
   updateStudioSchema,
@@ -45,6 +46,27 @@ export async function registerAdminRoutes(app: FastifyInstance) {
     const { publicId } = request.params as { publicId: string }
     return adminService.getTask(publicId)
   })
+
+  app.patch(
+    '/api/v1/admin/tasks/:publicId',
+    { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
+    async (request) => {
+      const adminId = adminPrincipal(request.principal)
+      const { publicId } = request.params as { publicId: string }
+      return adminService.updateTask(adminId, publicId, updateTaskSchema.parse(request.body))
+    },
+  )
+
+  app.delete(
+    '/api/v1/admin/tasks/:publicId',
+    { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
+    async (request, reply) => {
+      const adminId = adminPrincipal(request.principal)
+      const { publicId } = request.params as { publicId: string }
+      await adminService.deleteTask(adminId, publicId)
+      return reply.code(204).send()
+    },
+  )
 
   app.get('/api/v1/admin/users', { preHandler: app.requireAdmin }, async (request) => {
     return adminService.listUsers(listQuerySchema.parse(request.query))

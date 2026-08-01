@@ -42,6 +42,27 @@ export async function getAdminTask(publicId: string) {
   return toTask(taskSchema.parse(await apiRequest(`/api/v1/admin/tasks/${encodeURIComponent(publicId)}`)))
 }
 
+export async function updateAdminTask(
+  publicId: string,
+  url: string,
+  at: string | undefined,
+  version: number,
+) {
+  const body: Record<string, unknown> = { url, version }
+  if (at !== undefined) body.at = at
+  return toTask(taskSchema.parse(await apiRequest(
+    `/api/v1/admin/tasks/${encodeURIComponent(publicId)}`,
+    { method: 'PATCH', body },
+  )))
+}
+
+export async function deleteAdminTask(publicId: string) {
+  await apiRequest(
+    `/api/v1/admin/tasks/${encodeURIComponent(publicId)}`,
+    { method: 'DELETE' },
+  )
+}
+
 export async function listUsers(search = ''): Promise<User[]> {
   const query = new URLSearchParams({ limit: '100' })
   if (search) query.set('search', search)
