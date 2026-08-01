@@ -7,7 +7,7 @@ import { prisma } from '../../db.js'
 import { AppError } from '../../lib/errors.js'
 import { verifyPassword } from '../../lib/passwords.js'
 import { hashToken } from '../../lib/tokens.js'
-import { hashUserAccessKey, sessionUserLabel } from '../../lib/user-keys.js'
+import { hashUserAccessKey, maskUserAccessKey, sessionUserLabel } from '../../lib/user-keys.js'
 import {
   clearSessionCookie,
   sessionCookieNames,
@@ -76,6 +76,34 @@ export async function registerAuthRoutes(app: FastifyInstance) {
           studioId: user.studioId,
         },
       }
+    },
+  )
+
+  // 密钥连通检测：只验证不登录
+  app.post(
+    '/api/v1/auth/user/key-verify',
+    { onRequest: app.csrfProtection },
+    async (request, reply) => {
+      const body = userKeyLoginSchema.parse(request.body)
+      const user = await prisma.user.findUnique({
+        where: { accessKeyHash: hashUserAccessKey(body.key) },
+        include: { studio: true },
+      })
+      if (!user?.accessKeyHash || !user.enabled || !user.studio.enabled) {
+        return reply.send({ valid: false, reason: '密钥无效或已停用' })
+      }
+      return reply.send({
+        valid: true,
+        user: {
+          id: user.id,
+          maskedKey: maskUserAccessKey(user),
+          note: user.note,
+          studioId: user.studioId,
+          studioName: user.studio.name,
+          enabled: user.enabled,
+          lastUsedAt: user.lastUsedAt?.toISOString() ?? null,
+        },
+      })
     },
   )
 

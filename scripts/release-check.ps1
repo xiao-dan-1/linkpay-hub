@@ -35,6 +35,7 @@ if (-not $SkipInstall) {
   Invoke-Step "Install locked dependencies" { npm ci }
 }
 Invoke-Step "Generate Prisma client" { npm run db:generate }
+Invoke-Step "Apply migrations to the disposable test database" { npx prisma migrate deploy }
 Invoke-Step "Type check workspaces" { npm run typecheck }
 Invoke-Step "Run all tests" { npm run test:run }
 Invoke-Step "Build all workspaces" { npm run build }
@@ -48,9 +49,19 @@ Invoke-Step "Start production stack" { docker compose --env-file $EnvFile up -d 
 Invoke-Step "Wait for container health" {
   $deadline = (Get-Date).AddMinutes(3)
   do {
-    $status = docker compose --env-file $EnvFile ps --format json | ConvertFrom-Json
-    $unhealthy = @($status | Where-Object { $_.Service -ne "migrate" -and $_.Health -and $_.Health -ne "healthy" })
-    if ($unhealthy.Count -eq 0 -and @($status | Where-Object { $_.Service -eq "nginx" -and $_.Health -eq "healthy" }).Count -eq 1) { break }
+    # Compose v5 `ps --format json` truncates the Command display with a Unicode ellipsis that
+    # breaks ConvertFrom-Json under some console codepages, so parse the plain-text status instead.
+    $records = @(docker compose --env-file $EnvFile ps --format "{{.Service}}|{{.Status}}" |
+      ForEach-Object {
+        $parts = $_ -split '\|', 2
+        if ($parts.Count -eq 2) { [pscustomobject]@{ Service = $parts[0].Trim(); Status = $parts[1].Trim() } }
+      })
+    $unhealthy = @($records | Where-Object {
+      $_.Service -ne "migrate" -and
+      $_.Status -match '\((healthy|unhealthy)\)' -and
+      $_.Status -notmatch '\(healthy\)'
+    })
+    if ($unhealthy.Count -eq 0 -and @($records | Where-Object { $_.Service -eq "nginx" -and $_.Status -match '\(healthy\)' }).Count -eq 1) { break }
     Start-Sleep -Seconds 3
   } while ((Get-Date) -lt $deadline)
   if ((Get-Date) -ge $deadline) { throw "Containers did not become healthy" }

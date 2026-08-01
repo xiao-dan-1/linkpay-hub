@@ -1,11 +1,18 @@
+import { z } from 'zod'
 import {
   completeTaskSchema,
+  paymentUrlSchema,
   taskListQuerySchema,
 } from '@studio/contracts'
 import type { SessionPrincipal } from '@studio/contracts'
 import type { FastifyInstance } from 'fastify'
 import { AppError } from '../../lib/errors.js'
 import { taskService } from './task-service.js'
+
+const createStudioTasksSchema = z.object({
+  urls: z.array(paymentUrlSchema).min(1).max(200),
+  at: z.string().trim().max(8192).optional(),
+})
 
 function studioPrincipal(principal: SessionPrincipal | null) {
   if (!principal || principal.role !== 'studio' || !principal.studioId) {
@@ -53,6 +60,18 @@ export async function registerStudioTaskRoutes(app: FastifyInstance) {
       const studioId = studioPrincipal(request.principal)
       const { publicId } = request.params as { publicId: string }
       return { task: await taskService.nextStudioTask(studioId, publicId) }
+    },
+  )
+
+  // 工作室直接创建任务
+  app.post(
+    '/api/v1/studio/tasks',
+    { onRequest: app.csrfProtection, preHandler: app.requireStudio },
+    async (request, reply) => {
+      const studioId = studioPrincipal(request.principal)
+      const body = createStudioTasksSchema.parse(request.body)
+      const result = await taskService.createStudioTasks(studioId, body)
+      return reply.code(201).send(result)
     },
   )
 }

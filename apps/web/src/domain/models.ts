@@ -6,6 +6,7 @@ export type Studio = {
   enabled: boolean
   createdAt: string
   updatedAt: string
+  entryUrl: string | null
 }
 
 export type User = {
@@ -23,6 +24,7 @@ export type Task = {
   id: string
   publicId?: string
   url: string
+  at?: string
   status: TaskStatus
   userId?: string
   studioId?: string

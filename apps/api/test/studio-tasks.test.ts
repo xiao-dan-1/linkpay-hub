@@ -87,8 +87,9 @@ describe('studio task API', () => {
     expect(response.json().items.map((task: { publicId: string }) => task.publicId)).toEqual([
       'TASK-ONE', 'TASK-TWO', 'TASK-THREE',
     ])
-    expect(response.json().items[0].userLabel).toBe('客户 A')
+    expect('userLabel' in response.json().items[0]).toBe(false)
     expect(JSON.stringify(response.json())).not.toContain('accessKeyHash')
+    expect(JSON.stringify(response.json())).not.toContain('客户 A')
   })
 
   it('opens a queued task once and keeps terminal tasks read-only', async () => {

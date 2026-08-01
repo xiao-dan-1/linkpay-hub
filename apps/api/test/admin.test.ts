@@ -212,6 +212,8 @@ describe('administrator API', () => {
     const stored = await prisma.user.findUniqueOrThrow({ where: { id: payload.user.id } })
     expect(stored.accessKeyHash).toHaveLength(64)
     expect(stored.accessKeyHash).not.toBe(payload.accessKey)
+    expect(stored.accessKeyCipher).toBeTruthy()
+    expect(stored.accessKeyCipher).not.toContain(payload.accessKey)
 
     const listed = await app.inject({
       method: 'GET',
@@ -227,6 +229,30 @@ describe('administrator API', () => {
     })
     expect(JSON.stringify(listed.json())).not.toContain(payload.accessKey)
     expect(await prisma.auditLog.count({ where: { action: 'user.key_created' } })).toBe(1)
+  })
+
+  it('creates a key with a custom value and rejects duplicates and whitespace', async () => {
+    const created = await app.inject({
+      method: 'POST', url: '/api/v1/admin/user-keys',
+      headers: writeHeaders(), payload: { note: '客户 D', key: 'CUSTOM-01' },
+    })
+    expect(created.statusCode).toBe(201)
+    expect(created.json().accessKey).toBe('CUSTOM-01')
+    const stored = await prisma.user.findUniqueOrThrow({ where: { id: created.json().user.id } })
+    expect(stored.accessKeyHash).toBe(hashUserAccessKey('CUSTOM-01'))
+
+    const duplicate = await app.inject({
+      method: 'POST', url: '/api/v1/admin/user-keys',
+      headers: writeHeaders(), payload: { key: 'CUSTOM-01' },
+    })
+    expect(duplicate.statusCode).toBe(409)
+    expect(duplicate.json().error.code).toBe('USER_KEY_EXISTS')
+
+    const invalid = await app.inject({
+      method: 'POST', url: '/api/v1/admin/user-keys',
+      headers: writeHeaders(), payload: { key: 'has space' },
+    })
+    expect(invalid.statusCode).toBe(400)
   })
 
   it('disables a user and revokes all user sessions in the same operation', async () => {
@@ -246,6 +272,52 @@ describe('administrator API', () => {
     expect(await prisma.auditLog.count({ where: { action: 'user.key_enabled_updated' } })).toBe(1)
   })
 
+  it('reveals the full key on demand and records an audit', async () => {
+    const created = await app.inject({
+      method: 'POST', url: '/api/v1/admin/user-keys',
+      headers: writeHeaders(), payload: { note: '客户 C' },
+    })
+    expect(created.statusCode).toBe(201)
+    const { user, accessKey } = created.json()
+
+    const reveal = await app.inject({
+      method: 'GET', url: `/api/v1/admin/users/${user.id}/key`, headers: { cookie: adminCookie },
+    })
+    expect(reveal.statusCode).toBe(200)
+    expect(reveal.json()).toEqual({ accessKey })
+    expect(await prisma.auditLog.count({ where: { action: 'user.key_revealed' } })).toBe(1)
+  })
+
+  it('rejects revealing a key created before the copy feature existed', async () => {
+    const reveal = await app.inject({
+      method: 'GET', url: `/api/v1/admin/users/${userId}/key`, headers: { cookie: adminCookie },
+    })
+    expect(reveal.statusCode).toBe(404)
+    expect(reveal.json().error.code).toBe('KEY_NOT_STORED')
+  })
+
+  it('deletes a key with no tasks and records an audit', async () => {
+    const removed = await app.inject({
+      method: 'DELETE', url: `/api/v1/admin/users/${userId}`, headers: writeHeaders(),
+    })
+    expect(removed.statusCode).toBe(204)
+    expect(await prisma.user.findUnique({ where: { id: userId } })).toBeNull()
+    expect(await prisma.auditLog.count({ where: { action: 'user.deleted' } })).toBe(1)
+  })
+
+  it('blocks deleting a key that owns tasks', async () => {
+    await prisma.task.create({ data: {
+      publicId: 'TASK-LOCKED', url: 'https://locked.test/pay', status: 'queued',
+      userId, studioId,
+    } })
+    const removed = await app.inject({
+      method: 'DELETE', url: `/api/v1/admin/users/${userId}`, headers: writeHeaders(),
+    })
+    expect(removed.statusCode).toBe(409)
+    expect(removed.json().error.code).toBe('USER_HAS_TASKS')
+    expect(await prisma.user.findUnique({ where: { id: userId } })).not.toBeNull()
+  })
+
   it('updates the studio and rotates its one-time access link', async () => {
     const studio = await prisma.studio.findUniqueOrThrow({ where: { id: studioId } })
     const oldStudioSession = await sessionService.create('studio', studioId, studio.tokenVersion)
@@ -256,6 +328,7 @@ describe('administrator API', () => {
     })
     expect(current.statusCode).toBe(200)
     expect(current.json()).toMatchObject({ id: studioId, name: '测试工作室' })
+    expect(current.json().entryUrl).toBeNull()
 
     const renamed = await app.inject({
       method: 'PATCH', url: '/api/v1/admin/studio',
@@ -269,6 +342,11 @@ describe('administrator API', () => {
     })
     expect(access.statusCode).toBe(200)
     expect(access.json().url).toMatch(/^http:\/\/127\.0\.0\.1:5173\/studio\/.+$/)
+
+    const echoed = await app.inject({
+      method: 'GET', url: '/api/v1/admin/studio', headers: { cookie: adminCookie },
+    })
+    expect(echoed.json().entryUrl).toBe(access.json().url)
     const rejected = await app.inject({
       method: 'GET', url: '/api/v1/auth/studio/session', headers: { cookie: oldStudioCookie },
     })

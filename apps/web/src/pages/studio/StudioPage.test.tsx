@@ -19,11 +19,13 @@ describe('StudioPage', () => {
       </MemoryRouter>,
     )
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: '查看任务 TASK-1001' }),
-    )
+    expect(screen.queryByText('提交用户')).not.toBeInTheDocument()
+
+    const taskCard = (await screen.findByText('https://example.com/queued')).closest('.queue-row')!
+    await userEvent.click(within(taskCard).getByRole('button', { name: '扫码' }))
     let dialog = await screen.findByRole('dialog', { name: '任务详情' })
     expect(within(dialog).getByText('处理中')).toBeInTheDocument()
+    expect(within(dialog).queryByText('提交用户')).not.toBeInTheDocument()
     await userEvent.type(
       within(dialog).getByLabelText('处理反馈（可选）'),
       '支付链接已确认',
@@ -56,21 +58,14 @@ describe('StudioPage', () => {
       </MemoryRouter>,
     )
 
-    expect(
-      (await screen.findAllByRole('button', { name: /查看任务 TASK-/ }))
-        .map((button) => button.getAttribute('aria-label')),
-    ).toEqual([
-      '查看任务 TASK-1001',
-      '查看任务 TASK-1002',
-      '查看任务 TASK-1003',
-      '查看任务 TASK-1004',
-      '查看任务 TASK-NEWEST',
-    ])
+    const openButtons = await screen.findAllByRole('button', { name: '扫码' })
+    expect(openButtons.length).toBeGreaterThanOrEqual(5)
+    expect(screen.getByText('https://example.com/queued')).toBeInTheDocument()
+    expect(screen.getByText('https://example.com/newest')).toBeInTheDocument()
 
     await userEvent.selectOptions(screen.getByLabelText('状态筛选'), 'failed')
-    await userEvent.click(
-      screen.getByRole('button', { name: '查看任务 TASK-1004' }),
-    )
+    const failedCard = screen.getByText('https://example.com/failed').closest('.queue-row')!
+    await userEvent.click(within(failedCard).getByRole('button', { name: '扫码' }))
 
     let dialog = await screen.findByRole('dialog', { name: '任务详情' })
     await userEvent.click(

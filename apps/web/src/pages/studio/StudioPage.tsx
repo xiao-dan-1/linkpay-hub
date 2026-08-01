@@ -78,7 +78,7 @@ export function StudioPage() {
   const normalized = search.trim().toLowerCase()
   const filteredTasks = tasks.filter((task) => {
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter
-    const matchesSearch = !normalized || task.url.toLowerCase().includes(normalized) || task.id.toLowerCase().includes(normalized) || task.userLabel?.toLowerCase().includes(normalized)
+    const matchesSearch = !normalized || task.url.toLowerCase().includes(normalized) || task.id.toLowerCase().includes(normalized) || (task.at && task.at.toLowerCase().includes(normalized)) || (task.userLabel && task.userLabel.toLowerCase().includes(normalized))
     return matchesStatus && matchesSearch
   })
   const counts = {
@@ -149,16 +149,16 @@ export function StudioPage() {
     <>
       <AppShell title="工作室工作台" subtitle="打开排队任务时将自动进入处理中状态" eyebrow="STUDIO WORKBENCH" actions={<div className="queue-indicator"><span>当前排队</span><strong>{counts.queued}</strong></div>}>
         <section className="stats-grid studio-stats">
-          <StatCard label="排队中" value={counts.queued} tone="queued" icon={<Clock3 size={19} />} />
-          <StatCard label="处理中" value={counts.processing} tone="processing" icon={<LoaderCircle size={19} />} />
-          <StatCard label="今日成功" value={counts.success} tone="success" icon={<CheckCircle2 size={19} />} />
-          <StatCard label="今日失败" value={counts.failed} tone="failed" icon={<XCircle size={19} />} />
+          <StatCard label="排队中" value={counts.queued} tone="queued" icon={<Clock3 size={19} />} active={statusFilter === 'queued'} onClick={() => setStatusFilter(statusFilter === 'queued' ? 'all' : 'queued')} />
+          <StatCard label="处理中" value={counts.processing} tone="processing" icon={<LoaderCircle size={19} />} active={statusFilter === 'processing'} onClick={() => setStatusFilter(statusFilter === 'processing' ? 'all' : 'processing')} />
+          <StatCard label="今日成功" value={counts.success} tone="success" icon={<CheckCircle2 size={19} />} active={statusFilter === 'success'} onClick={() => setStatusFilter(statusFilter === 'success' ? 'all' : 'success')} />
+          <StatCard label="今日失败" value={counts.failed} tone="failed" icon={<XCircle size={19} />} active={statusFilter === 'failed'} onClick={() => setStatusFilter(statusFilter === 'failed' ? 'all' : 'failed')} />
         </section>
         <section className="panel task-panel studio-task-panel">
           <div className="panel-heading task-panel-heading">
             <div><p className="eyebrow">PROCESSING QUEUE</p><h2>任务队列</h2><p>越下越新，优先处理最早进入队列的任务。</p></div>
             <div className="filters">
-              <label className="search-field"><Search size={16} /><span className="sr-only">搜索任务</span><input aria-label="搜索任务" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="编号、链接或用户" /></label>
+              <label className="search-field"><Search size={16} /><span className="sr-only">搜索任务</span><input aria-label="搜索任务" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="编号/链接/账号/备注" /></label>
               <label><span className="sr-only">状态筛选</span><select aria-label="状态筛选" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="all">全部状态</option><option value="queued">排队中</option><option value="processing">处理中</option><option value="success">成功</option><option value="failed">失败</option></select></label>
             </div>
           </div>

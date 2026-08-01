@@ -2,6 +2,7 @@ import {
   CheckCircle2,
   Clock3,
   Layers3,
+  RefreshCw,
   LoaderCircle,
   LogOut,
   Search,
@@ -27,25 +28,34 @@ export function UserWorkbenchPage() {
   const { user, logoutUser } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
   const [rawInput, setRawInput] = useState('')
+  const [atInput, setAtInput] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [feedback, setFeedback] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [autoRefresh, setAutoRefresh] = useState(true)
 
-  const refreshTasks = useCallback(async () => {
-    setLoading(true)
+  const refreshTasks = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       setTasks(await listUserTasks())
     } catch (cause) {
-      setFeedback(cause instanceof Error ? cause.message : '任务加载失败')
+      if (!silent) setFeedback(cause instanceof Error ? cause.message : '任务加载失败')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
 
   useEffect(() => { void refreshTasks() }, [refreshTasks])
+
+  // 5 秒自动刷新（静默）
+  useEffect(() => {
+    if (!autoRefresh) return
+    const timer = window.setInterval(() => { void refreshTasks(true) }, 5000)
+    return () => window.clearInterval(timer)
+  }, [refreshTasks, autoRefresh])
 
   const parsed = useMemo(() => (
     rawInput
@@ -58,7 +68,7 @@ export function UserWorkbenchPage() {
   const normalized = search.trim().toLowerCase()
   const filteredTasks = tasks.filter((task) => {
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter
-    const matchesSearch = !normalized || task.url.toLowerCase().includes(normalized) || task.id.toLowerCase().includes(normalized)
+    const matchesSearch = !normalized || task.url.toLowerCase().includes(normalized) || task.id.toLowerCase().includes(normalized) || (task.at && task.at.toLowerCase().includes(normalized)) || (task.userLabel && task.userLabel.toLowerCase().includes(normalized))
     return matchesStatus && matchesSearch
   })
   const counts = {
@@ -80,9 +90,34 @@ export function UserWorkbenchPage() {
     if (!canSubmit) return
     setSubmitting(true)
     try {
-      const publicIds = await submitTasks(parsed.valid)
+      // pair URLs with ATs line by line
+      const atLines = atInput.split(/\r?\n/).map(l => l.trim())
+      const urlLines = rawInput.split(/\r?\n/)
+      const atByUrl: Map<string, string> = new Map()
+      let urlIdx = 0
+      for (const line of urlLines) {
+        const url = line.trim()
+        if (!url || !url.startsWith('http')) continue
+        const at = atLines[urlIdx]?.trim()
+        if (at) atByUrl.set(url, at)
+        urlIdx++
+      }
+
+      // group URLs by AT
+      const groups: Map<string, string[]> = new Map()
+      for (const url of parsed.valid) {
+        const at = atByUrl.get(url) || ''
+        if (!groups.has(at)) groups.set(at, [])
+        groups.get(at)!.push(url)
+      }
+
+      let totalCreated = 0
+      for (const [at, urls] of groups) {
+        totalCreated += (await submitTasks(urls, at || undefined)).length
+      }
       setRawInput('')
-      setFeedback(`已创建 ${publicIds.length} 条任务`)
+      setAtInput('')
+      setFeedback(`已创建 ${totalCreated} 条任务`)
       await refreshTasks()
     } catch (cause) {
       setFeedback(`${cause instanceof Error ? cause.message : '提交失败'}；请刷新确认已成功的部分`)
@@ -107,13 +142,16 @@ export function UserWorkbenchPage() {
         <section className="workbench-grid">
           <article className="panel submit-panel">
             <div className="panel-heading"><div><p className="eyebrow">TASK SUBMIT</p><h2>创建任务</h2><p>每行输入一条支付链接，数量不限，系统会自动分批提交。</p></div></div>
-            <label className="textarea-label" htmlFor="task-links">任务链接</label>
-            <textarea id="task-links" aria-label="任务链接" rows={8} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://example.com/payment-1\nhttps://example.com/payment-2'} />
+            <label className="textarea-label" htmlFor="task-at">AT Token</label>
+            <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="每行一个 AT，与链接一一对应" />
+            <label className="textarea-label" htmlFor="task-links">支付链接</label>
+            <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://example.com/payment-1\nhttps://example.com/payment-2'} />
             <div className="validation-row" aria-live="polite">
               <span>有效 {parsed.valid.length} 条</span>
               {parsed.duplicateCount ? <span>已去重 {parsed.duplicateCount} 条</span> : null}
               {parsed.blankCount ? <span>空行 {parsed.blankCount} 条</span> : null}
               {parsed.invalid.length ? <span className="validation-error">无效 {parsed.invalid.length} 条</span> : null}
+              {atInput.trim() ? <span>AT {atInput.split(/\r?\n/).filter(l => l.trim()).length} 条</span> : null}
             </div>
             {parsed.invalid.length ? <div className="invalid-links" role="alert">无效链接：{parsed.invalid.join('、')}</div> : null}
             <div className="submit-footer"><span>同次重复链接自动合并，超过 200 条将自动分批。</span><button className="button submit-button" disabled={!canSubmit} onClick={() => void onSubmit()}><Send size={17} />{submitLabel}</button></div>
@@ -125,17 +163,20 @@ export function UserWorkbenchPage() {
           </aside>
         </section>
         <section className="stats-grid user-stats">
-          <StatCard label="全部任务" value={counts.all} icon={<Layers3 size={19} />} />
-          <StatCard label="排队中" value={counts.queued} tone="queued" icon={<Clock3 size={19} />} />
-          <StatCard label="处理中" value={counts.processing} tone="processing" icon={<LoaderCircle size={19} />} />
-          <StatCard label="成功" value={counts.success} tone="success" icon={<CheckCircle2 size={19} />} />
-          <StatCard label="失败" value={counts.failed} tone="failed" icon={<XCircle size={19} />} />
+          <StatCard label="全部任务" value={counts.all} icon={<Layers3 size={19} />} active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} />
+          <StatCard label="排队中" value={counts.queued} tone="queued" icon={<Clock3 size={19} />} active={statusFilter === 'queued'} onClick={() => setStatusFilter('queued')} />
+          <StatCard label="处理中" value={counts.processing} tone="processing" icon={<LoaderCircle size={19} />} active={statusFilter === 'processing'} onClick={() => setStatusFilter('processing')} />
+          <StatCard label="成功" value={counts.success} tone="success" icon={<CheckCircle2 size={19} />} active={statusFilter === 'success'} onClick={() => setStatusFilter('success')} />
+          <StatCard label="失败" value={counts.failed} tone="failed" icon={<XCircle size={19} />} active={statusFilter === 'failed'} onClick={() => setStatusFilter('failed')} />
         </section>
         <section className="panel task-panel">
           <div className="panel-heading task-panel-heading">
             <div><p className="eyebrow">PAYMENT LINKS</p><h2>支付链接</h2><p>默认按最新提交在上方排列。</p></div>
             <div className="filters">
-              <label className="search-field"><Search size={16} /><span className="sr-only">搜索任务</span><input aria-label="搜索任务" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="任务编号或链接" /></label>
+              <button className={`button compact ghost${autoRefresh ? '' : ' muted'}`} onClick={() => setAutoRefresh(!autoRefresh)} title={autoRefresh ? '自动刷新中（5s）' : '自动刷新已关闭'}>
+                <RefreshCw size={14} className={autoRefresh ? 'icon-spin' : ''} />{autoRefresh ? '5s' : '关'}
+              </button>
+              <label className="search-field"><Search size={16} /><span className="sr-only">搜索任务</span><input aria-label="搜索任务" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="编号/链接/账号/备注" /></label>
               <label><span className="sr-only">状态筛选</span><select aria-label="状态筛选" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="all">全部状态</option><option value="queued">排队中</option><option value="processing">处理中</option><option value="success">成功</option><option value="failed">失败</option></select></label>
             </div>
           </div>

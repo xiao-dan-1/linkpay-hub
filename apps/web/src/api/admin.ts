@@ -8,6 +8,7 @@ import {
   taskListSchema,
   taskSchema,
   trendsResponseSchema,
+  userKeyRevealResponseSchema,
 } from '@studio/contracts'
 import type { TaskStatus, TrendsResponse } from '@studio/contracts'
 import { z } from 'zod'
@@ -54,11 +55,24 @@ export async function setUserEnabled(userId: string, enabled: boolean) {
   }))
 }
 
-export async function createUserKey(note?: string) {
+export async function createUserKey(note?: string, key?: string) {
   return createUserKeyResponseSchema.parse(await apiRequest('/api/v1/admin/user-keys', {
     method: 'POST',
-    body: note?.trim() ? { note: note.trim() } : {},
+    body: {
+      ...(note?.trim() ? { note: note.trim() } : {}),
+      ...(key?.trim() ? { key: key.trim() } : {}),
+    },
   }))
+}
+
+export async function revealUserKey(userId: string) {
+  return userKeyRevealResponseSchema.parse(
+    await apiRequest(`/api/v1/admin/users/${encodeURIComponent(userId)}/key`),
+  )
+}
+
+export async function deleteUser(userId: string) {
+  await apiRequest(`/api/v1/admin/users/${encodeURIComponent(userId)}`, { method: 'DELETE' })
 }
 
 export async function getStudio(): Promise<Studio> {

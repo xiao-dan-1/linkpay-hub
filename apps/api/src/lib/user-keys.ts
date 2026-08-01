@@ -1,4 +1,5 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
+import { config } from '../config.js'
 
 const ACCESS_KEY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
@@ -25,7 +26,7 @@ export function createUserAccessKey() {
 }
 
 export function normalizeUserAccessKey(key: string) {
-  return key.trim().toUpperCase()
+  return key.trim()
 }
 
 export function hashUserAccessKey(key: string) {
@@ -38,6 +39,28 @@ export function keyDisplayParts(key: string) {
     keyPrefix: normalized.slice(0, 8),
     keySuffix: normalized.slice(-4),
   }
+}
+
+function keyEncryptionKey() {
+  return createHash('sha256').update(config.COOKIE_SECRET).digest()
+}
+
+export function encryptAccessKey(accessKey: string) {
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', keyEncryptionKey(), iv)
+  const encrypted = Buffer.concat([cipher.update(accessKey, 'utf8'), cipher.final()])
+  const tag = cipher.getAuthTag()
+  return Buffer.concat([iv, tag, encrypted]).toString('base64')
+}
+
+export function decryptAccessKey(blob: string) {
+  const raw = Buffer.from(blob, 'base64')
+  const iv = raw.subarray(0, 12)
+  const tag = raw.subarray(12, 28)
+  const encrypted = raw.subarray(28)
+  const decipher = createDecipheriv('aes-256-gcm', keyEncryptionKey(), iv)
+  decipher.setAuthTag(tag)
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8')
 }
 
 export function maskUserAccessKey(user: UserKeyDisplay) {

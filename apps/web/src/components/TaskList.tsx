@@ -1,23 +1,31 @@
-import { ExternalLink, Eye, Inbox } from 'lucide-react'
-import { useMemo } from 'react'
+import { Activity, Clock, Copy, Inbox, ScanLine } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import type { AtCheckResult } from '../api/at'
+import { checkAt } from '../api/at'
 import type { Task, User } from '../domain/models'
+import { extractAccountInfo } from '../domain/jwt-decode'
+import { AtResultModal } from './AtResultModal'
 import { StatusBadge } from './StatusBadge'
+import { TaskCountdown } from './TaskCountdown'
 
-function formatDate(value?: string) {
-  if (!value) return '—'
-  return new Intl.DateTimeFormat('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(value))
+function formatTime(value?: string) {
+  if (!value) return ''
+  const d = new Date(value)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
+function copyToClipboard(text: string, label: string, setMsg: (m: string) => void) {
+  navigator.clipboard.writeText(text).then(
+    () => setMsg(`${label}已复制`),
+    () => setMsg('复制失败'),
+  )
+}
+
+type AtModalData = { title: string; result: AtCheckResult }
+
 export function TaskList({
-  tasks,
-  users,
-  onSelect,
+  tasks, users, onSelect,
   emptyText = '暂时没有符合条件的任务',
 }: {
   tasks: Task[]
@@ -26,10 +34,25 @@ export function TaskList({
   emptyText?: string
 }) {
   const userNames = useMemo(
-    () => new Map(users.map((user) => [user.id, user.note || user.maskedKey])),
+    () => new Map(users.map((u) => [u.id, u.note || u.maskedKey])),
     [users],
   )
-  const showUsers = users.length > 0 || tasks.some((task) => Boolean(task.userLabel))
+  const showUsers = users.length > 0 || tasks.some(t => Boolean(t.userLabel))
+  const [toastMsg, setToastMsg] = useState('')
+  const [loadingTask, setLoadingTask] = useState<string | null>(null)
+  const [atModal, setAtModal] = useState<AtModalData | null>(null)
+
+  const handleCheck = async (task: Task) => {
+    if (!task.at) return
+    setLoadingTask(task.id)
+    try {
+      setAtModal({ title: task.id, result: await checkAt(task.at) })
+    } catch (err) {
+      setToastMsg(err instanceof Error ? err.message : 'at 查询失败')
+    } finally {
+      setLoadingTask(null)
+    }
+  }
 
   if (!tasks.length) {
     return (
@@ -41,41 +64,66 @@ export function TaskList({
   }
 
   return (
-    <div className="task-table-wrap">
-      <table className="task-table">
-        <thead>
-          <tr>
-            <th>任务编号</th>
-            <th>链接</th>
-            {showUsers ? <th>提交用户</th> : null}
-            <th>提交时间</th>
-            <th>状态</th>
-            <th><span className="sr-only">操作</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((task) => (
-            <tr key={task.id}>
-              <td data-label="任务编号"><span className="task-id">{task.id}</span></td>
-              <td data-label="链接">
-                <a className="task-link" href={task.url} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>
-                  <span>{task.url}</span><ExternalLink size={14} aria-hidden="true" />
-                </a>
-              </td>
-              {showUsers ? <td data-label="提交用户">{task.userLabel ?? (task.userId ? userNames.get(task.userId) : undefined) ?? '未知用户'}</td> : null}
-              <td data-label="提交时间">{formatDate(task.submittedAt)}</td>
-              <td data-label="状态"><StatusBadge status={task.status} /></td>
-              <td className="task-action-cell">
-                <button className="icon-button" aria-label={`查看任务 ${task.id}`} onClick={() => onSelect(task)}>
-                  <Eye size={18} />
+    <>
+      {toastMsg ? <div className="toast-region"><div className="toast" role="status">{toastMsg}</div></div> : null}
+      <AtResultModal data={atModal} onClose={() => setAtModal(null)} />
+      <div className="queue-list">
+        {tasks.map((task, i) => {
+          const info = task.at ? extractAccountInfo(task.at) : null
+          const isExpired = task.status === 'queued' && new Date(task.submittedAt).getTime() + 15 * 60 * 1000 < Date.now()
+          return (
+            <div key={task.id} className="queue-row">
+              {/* seq */}
+              <span className="queue-seq">{String(i + 1).padStart(2, '0')}</span>
+
+              {/* status */}
+              <StatusBadge status={isExpired && task.status === 'queued' ? 'failed' : task.status} />
+
+              {/* account info */}
+              <div className="queue-account">
+                {info?.email ? <span className="queue-email" title={info.email}>{info.email}</span> : null}
+                {info?.planType ? <span className={`queue-plan${info.planType === 'free' ? ' queue-plan-free' : ''}`}>{info.planType}</span> : null}
+                {showUsers ? <span className="queue-user">{task.userLabel ?? (task.userId ? userNames.get(task.userId) : undefined) ?? ''}</span> : null}
+              </div>
+
+              {/* link */}
+              <a className="queue-link" href={task.url} target="_blank" rel="noreferrer" title={task.url} onClick={e => e.stopPropagation()}>
+                {task.url.length > 48 ? `${task.url.slice(0, 48)}…` : task.url}
+              </a>
+
+              {/* time */}
+              <div className="queue-time">
+                <span title={task.submittedAt}>{formatTime(task.submittedAt)}</span>
+                {task.status === 'queued' || task.status === 'processing' ? (
+                  <TaskCountdown submittedAt={task.submittedAt} />
+                ) : null}
+                {isExpired && task.status === 'queued' ? (
+                  <span className="queue-expired"><Clock size={12} />超时</span>
+                ) : null}
+              </div>
+
+              {/* actions */}
+              <div className="queue-actions">
+                <button className="icon-button" aria-label="扫码" title="扫码处理" onClick={() => onSelect(task)}>
+                  <ScanLine size={16} />
                 </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                {task.at ? (
+                  <button className="icon-button" aria-label="复制 at" title="复制 at" onClick={() => copyToClipboard(task.at!, 'AT', setToastMsg)}>
+                    <Copy size={16} />
+                  </button>
+                ) : null}
+                {task.at ? (
+                  <button className={`icon-button${loadingTask === task.id ? ' checking' : ''}`} aria-label="测活查订阅" title="测活/查订阅" disabled={loadingTask === task.id} onClick={() => void handleCheck(task)}>
+                    <Activity size={16} className={loadingTask === task.id ? 'icon-pulse' : ''} />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </>
   )
 }
 
-export { formatDate }
+export { formatTime as formatDate }

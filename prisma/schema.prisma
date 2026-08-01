@@ -28,20 +28,22 @@ enum AuditActorType {
 }
 
 model Studio {
-  id              String   @id @default(uuid())
-  name            String
-  accessTokenHash String   @unique
-  tokenVersion    Int      @default(0)
-  enabled         Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  users           User[]
-  tasks           Task[]
+  id                String   @id @default(uuid())
+  name              String
+  accessTokenHash   String   @unique
+  accessTokenCipher String?
+  tokenVersion      Int      @default(0)
+  enabled           Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  users             User[]
+  tasks             Task[]
 }
 
 model User {
   id                String            @id @default(uuid())
   accessKeyHash     String?           @unique
+  accessKeyCipher   String?           @unique
   keyPrefix         String?
   keySuffix         String?
   note              String?
@@ -73,6 +75,7 @@ model Task {
   publicId            String     @unique
   queueSeq            BigInt     @unique @default(autoincrement())
   url                 String
+  at                  String?
   status              TaskStatus @default(queued)
   userId              String
   studioId            String

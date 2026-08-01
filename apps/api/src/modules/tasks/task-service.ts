@@ -28,12 +28,6 @@ function decodeCursor(cursor?: string) {
   }
 }
 
-const taskUserSelect = {
-  note: true,
-  keyPrefix: true,
-  keySuffix: true,
-} as const
-
 function chunkResult(chunk: {
   batchId: string
   createdCount: number
@@ -96,9 +90,16 @@ export const taskService = {
               url,
               userId,
               studioId,
+              ...(input.at ? { at: input.at } : {}),
             },
           })
-          taskPublicIds.push(task.publicId)
+          // 顺序任务编号取自数据库自增序号：TASK-1、TASK-2…
+          const publicId = `TASK-${task.queueSeq}`
+          await transaction.task.update({
+            where: { id: task.id },
+            data: { publicId },
+          })
+          taskPublicIds.push(publicId)
         }
 
         const chunk = await transaction.submissionChunk.create({
@@ -199,15 +200,11 @@ export const taskService = {
               OR: [
                 { publicId: { contains: input.search, mode: 'insensitive' } },
                 { url: { contains: input.search, mode: 'insensitive' } },
-                { user: { note: { contains: input.search, mode: 'insensitive' } } },
-                { user: { keyPrefix: { contains: input.search, mode: 'insensitive' } } },
-                { user: { keySuffix: { contains: input.search, mode: 'insensitive' } } },
               ],
             }
           : {}),
         ...(cursor !== undefined ? { queueSeq: { gt: cursor } } : {}),
       },
-      include: { user: { select: taskUserSelect } },
       orderBy: { queueSeq: 'asc' },
       take: input.limit + 1,
     })
@@ -228,7 +225,6 @@ export const taskService = {
     return prisma.$transaction(async (transaction) => {
       const task = await transaction.task.findFirst({
         where: { studioId, publicId },
-        include: { user: { select: taskUserSelect } },
       })
       if (!task) throw notFoundError()
 
@@ -257,7 +253,6 @@ export const taskService = {
 
       const current = await transaction.task.findUniqueOrThrow({
         where: { id: task.id },
-        include: { user: { select: taskUserSelect } },
       })
       return serializeTask(current)
     })
@@ -304,7 +299,6 @@ export const taskService = {
       })
       const current = await transaction.task.findUniqueOrThrow({
         where: { id: task.id },
-        include: { user: { select: taskUserSelect } },
       })
       return serializeTask(current)
     })
@@ -319,5 +313,38 @@ export const taskService = {
     })
     if (!next) return null
     return this.openStudioTask(studioId, next.publicId)
+  },
+
+  // 工作室直接创建任务（无需 batch/chunk）
+  async createStudioTasks(
+    studioId: string,
+    input: { urls: string[]; at?: string },
+  ) {
+    const urls = [...new Set(input.urls)]
+    if (urls.length === 0) return { taskPublicIds: [] as string[] }
+    if (urls.length > 200) throw new AppError(400, 'TOO_MANY_URLS', '单次最多 200 条链接')
+
+    const taskPublicIds: string[] = []
+    await prisma.$transaction(async (transaction) => {
+      for (const url of urls) {
+        const task = await transaction.task.create({
+          data: {
+            publicId: createPublicId(),
+            url,
+            studioId,
+            userId: '', // studio-created tasks have no user
+            ...(input.at ? { at: input.at } : {}),
+          },
+        })
+        const publicId = `TASK-${task.queueSeq}`
+        await transaction.task.update({
+          where: { id: task.id },
+          data: { publicId },
+        })
+        taskPublicIds.push(publicId)
+      }
+    })
+
+    return { taskPublicIds, createdCount: taskPublicIds.length }
   },
 }

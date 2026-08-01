@@ -19,9 +19,8 @@ export const adminLoginSchema = z.object({
 export const userAccessKeySchema = z
   .string()
   .trim()
-  .transform((value) => value.toUpperCase())
   .pipe(z.string().regex(
-    /^USR-[A-HJ-NP-Z2-9]{4}(?:-[A-HJ-NP-Z2-9]{4}){3}$/,
+    /^\S{4,64}$/,
     '请输入有效的用户密钥',
   ))
 

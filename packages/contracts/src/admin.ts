@@ -14,15 +14,24 @@ export const adminUserSchema = z.object({
 
 export const createUserKeySchema = z.object({
   note: z.string().trim().max(200, '备注最多 200 个字符').optional(),
+  key: z
+    .string()
+    .trim()
+    .regex(/^\S{4,64}$/, '自定义密钥需 4-64 位非空白字符')
+    .optional(),
 })
 
 export const createUserKeyResponseSchema = z.object({
   user: adminUserSchema,
-  accessKey: z.string().regex(/^USR-[A-HJ-NP-Z2-9]{4}(?:-[A-HJ-NP-Z2-9]{4}){3}$/),
+  accessKey: z.string().regex(/^\S{4,64}$/),
 })
 
 export const updateUserEnabledSchema = z.object({
   enabled: z.boolean(),
+})
+
+export const userKeyRevealResponseSchema = z.object({
+  accessKey: z.string(),
 })
 
 export const studioSchema = z.object({
@@ -31,6 +40,7 @@ export const studioSchema = z.object({
   enabled: z.boolean(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  entryUrl: z.string().nullable(),
 })
 
 export const updateStudioSchema = z.object({

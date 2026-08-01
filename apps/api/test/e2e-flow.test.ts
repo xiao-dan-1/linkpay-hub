@@ -101,7 +101,8 @@ describe('production end-to-end flow', () => {
     const queue = await app.inject({
       method: 'GET', url: '/api/v1/studio/tasks', headers: { cookie: studioCookie },
     })
-    expect(queue.json().items[0].userLabel).toBe('端到端客户')
+    expect('userLabel' in queue.json().items[0]).toBe(false)
+    expect(JSON.stringify(queue.json())).not.toContain('端到端客户')
     const [first, second] = queue.json().items as Array<{ publicId: string }>
 
     const opened = await app.inject({

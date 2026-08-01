@@ -16,6 +16,7 @@ export function toTask(task: ApiTask): Task {
     id: task.publicId,
     publicId: task.publicId,
     url: task.url,
+    at: task.at,
     status: task.status,
     queueSeq: task.queueSeq,
     submittedAt: task.submittedAt,
@@ -35,21 +36,23 @@ function queryString(input: { status?: TaskStatus; search?: string; limit?: numb
   return query.toString()
 }
 
-export async function submitTasks(urls: string[]) {
+export async function submitTasks(urls: string[], at?: string) {
   const batch = createTaskBatchResponseSchema.parse(await apiRequest('/api/v1/user/task-batches', {
     method: 'POST', body: { requestedCount: urls.length },
   }))
   const publicIds: string[] = []
+  const chunkBody = (urls: string[]) => ({
+    batchId: batch.batchId,
+    idempotencyKey: crypto.randomUUID(),
+    urls,
+    ...(at?.trim() ? { at: at.trim() } : {}),
+  })
   for (let offset = 0; offset < urls.length; offset += CHUNK_SIZE) {
     const chunk = createTaskChunkResponseSchema.parse(await apiRequest(
       `/api/v1/user/task-batches/${batch.batchId}/chunks`,
       {
         method: 'POST',
-        body: {
-          batchId: batch.batchId,
-          idempotencyKey: crypto.randomUUID(),
-          urls: urls.slice(offset, offset + CHUNK_SIZE),
-        },
+        body: chunkBody(urls.slice(offset, offset + CHUNK_SIZE)),
       },
     ))
     publicIds.push(...chunk.taskPublicIds)

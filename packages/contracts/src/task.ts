@@ -20,6 +20,7 @@ export const paymentUrlSchema = z
 export const taskSchema = z.object({
   publicId: z.string().min(1),
   url: paymentUrlSchema,
+  at: z.string().max(8192).optional(),
   status: taskStatusSchema,
   queueSeq: z.string().regex(/^\d+$/),
   submittedAt: z.string().datetime(),
@@ -44,6 +45,7 @@ export const createTaskChunkSchema = z.object({
   batchId: z.string().uuid(),
   idempotencyKey: z.string().uuid(),
   urls: z.array(paymentUrlSchema).min(1).max(200),
+  at: z.string().trim().max(8192).optional(),
 })
 
 export const createTaskChunkResponseSchema = z.object({

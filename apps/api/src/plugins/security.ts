@@ -29,7 +29,7 @@ export async function registerSecurity(app: FastifyInstance) {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
-      secure: config.NODE_ENV === 'production',
+      secure: new URL(config.APP_ORIGIN).protocol === 'https:',
       signed: true,
     },
     getToken: (request) => request.headers['x-csrf-token'] as string | undefined,

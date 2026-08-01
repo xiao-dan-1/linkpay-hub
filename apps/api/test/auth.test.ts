@@ -58,7 +58,7 @@ describe('production authentication', () => {
     return { token: response.json().token as string, cookie: cookiesFrom(response) }
   }
 
-  it('logs in with a normalized access key, updates usage, and revokes disabled sessions', async () => {
+  it('logs in with an access key, updates usage, and revokes disabled sessions', async () => {
     const studio = await prisma.studio.findFirstOrThrow()
     const user = await prisma.user.create({
       data: {
@@ -78,7 +78,7 @@ describe('production authentication', () => {
         cookie: protection.cookie,
         'x-csrf-token': protection.token,
       },
-      payload: { key: ' usr-abcd-efgh-jkmn-pqrs ' },
+      payload: { key: ' USR-ABCD-EFGH-JKMN-PQRS ' },
     })
 
     expect(login.statusCode).toBe(200)

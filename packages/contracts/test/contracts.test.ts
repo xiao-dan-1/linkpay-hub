@@ -4,22 +4,37 @@ import {
   createTaskChunkSchema,
   taskSchema,
   userKeyLoginSchema,
+  userKeyRevealResponseSchema,
 } from '../src/index'
 
 describe('production contracts', () => {
-  it('validates and normalizes reusable user access keys', () => {
+  it('validates and preserves user access keys as entered', () => {
     expect(
       userKeyLoginSchema.parse({ key: ' usr-abcd-efgh-jkmn-pqrs ' }),
-    ).toEqual({ key: 'USR-ABCD-EFGH-JKMN-PQRS' })
-    expect(() =>
-      userKeyLoginSchema.parse({ key: 'USR-ABCI-EFGH-JKMN-PQRS' }),
-    ).toThrow()
+    ).toEqual({ key: 'usr-abcd-efgh-jkmn-pqrs' })
+    expect(
+      userKeyLoginSchema.parse({ key: ' my-custom-01 ' }),
+    ).toEqual({ key: 'my-custom-01' })
+    expect(() => userKeyLoginSchema.parse({ key: 'has space' })).toThrow()
+    expect(() => userKeyLoginSchema.parse({ key: 'abc' })).toThrow()
   })
 
   it('validates optional administrator key notes', () => {
     expect(createUserKeySchema.parse({ note: ' 客户 A ' })).toEqual({ note: '客户 A' })
     expect(createUserKeySchema.parse({})).toEqual({})
     expect(() => createUserKeySchema.parse({ note: 'a'.repeat(201) })).toThrow()
+  })
+
+  it('validates custom user keys', () => {
+    expect(createUserKeySchema.parse({ key: ' CUSTOM-01 ' })).toEqual({ key: 'CUSTOM-01' })
+    expect(() => createUserKeySchema.parse({ key: 'has space' })).toThrow()
+    expect(() => createUserKeySchema.parse({ key: 'abc' })).toThrow()
+  })
+
+  it('defines the reveal-key response schema', () => {
+    expect(
+      userKeyRevealResponseSchema.parse({ accessKey: 'USR-ABCD-EFGH-JKMN-PQRS' }),
+    ).toEqual({ accessKey: 'USR-ABCD-EFGH-JKMN-PQRS' })
   })
 
   it('limits transport chunks while preserving unlimited user submissions', () => {

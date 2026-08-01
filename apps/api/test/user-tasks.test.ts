@@ -69,6 +69,9 @@ describe('user task API', () => {
     })
     expect(created.statusCode).toBe(201)
     expect(created.json().taskPublicIds).toHaveLength(2)
+    expect(
+      created.json().taskPublicIds.every((id: string) => /^TASK-\d+$/.test(id)),
+    ).toBe(true)
 
     const repeated = await app.inject({
       method: 'POST', url: `/api/v1/user/task-batches/${batchId}/chunks`,

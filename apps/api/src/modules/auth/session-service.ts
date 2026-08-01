@@ -21,7 +21,7 @@ function cookieOptions(expiresAt: Date) {
     path: '/',
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: config.NODE_ENV === 'production',
+    secure: new URL(config.APP_ORIGIN).protocol === 'https:',
     expires: expiresAt,
   }
 }

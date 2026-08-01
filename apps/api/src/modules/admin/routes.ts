@@ -55,7 +55,7 @@ export async function registerAdminRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const adminId = adminPrincipal(request.principal)
       const body = createUserKeySchema.parse(request.body)
-      return reply.code(201).send(await adminService.createUserKey(adminId, body.note))
+      return reply.code(201).send(await adminService.createUserKey(adminId, body.note, body.key))
     },
   )
 
@@ -67,6 +67,27 @@ export async function registerAdminRoutes(app: FastifyInstance) {
       const { userId } = request.params as { userId: string }
       const body = updateUserEnabledSchema.parse(request.body)
       return adminService.updateUserEnabled(adminId, userId, body.enabled)
+    },
+  )
+
+  app.delete(
+    '/api/v1/admin/users/:userId',
+    { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
+    async (request, reply) => {
+      const adminId = adminPrincipal(request.principal)
+      const { userId } = request.params as { userId: string }
+      await adminService.deleteUser(adminId, userId)
+      return reply.code(204).send()
+    },
+  )
+
+  app.get(
+    '/api/v1/admin/users/:userId/key',
+    { preHandler: app.requireAdmin },
+    async (request) => {
+      const adminId = adminPrincipal(request.principal)
+      const { userId } = request.params as { userId: string }
+      return adminService.revealUserKey(adminId, userId)
     },
   )
 

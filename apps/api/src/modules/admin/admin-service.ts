@@ -3,13 +3,16 @@ import { config } from '../../config.js'
 import { prisma } from '../../db.js'
 import type { Prisma } from '../../generated/prisma/client.js'
 import { writeAudit } from '../../lib/audit.js'
-import { notFoundError } from '../../lib/errors.js'
+import { AppError, notFoundError } from '../../lib/errors.js'
 import { createOpaqueToken, hashToken } from '../../lib/tokens.js'
 import {
   createUserAccessKey,
+  decryptAccessKey,
+  encryptAccessKey,
   hashUserAccessKey,
   keyDisplayParts,
   maskUserAccessKey,
+  normalizeUserAccessKey,
 } from '../../lib/user-keys.js'
 import { serializeTask } from '../tasks/serializers.js'
 
@@ -61,6 +64,7 @@ function serializeStudio(studio: {
   enabled: boolean
   createdAt: Date
   updatedAt: Date
+  accessTokenCipher: string | null
 }) {
   return {
     id: studio.id,
@@ -68,6 +72,9 @@ function serializeStudio(studio: {
     enabled: studio.enabled,
     createdAt: studio.createdAt.toISOString(),
     updatedAt: studio.updatedAt.toISOString(),
+    entryUrl: studio.accessTokenCipher
+      ? `${config.APP_ORIGIN}/studio/${decryptAccessKey(studio.accessTokenCipher)}`
+      : null,
   }
 }
 
@@ -234,17 +241,28 @@ export const adminService = {
     }
   },
 
-  async createUserKey(adminId: string, rawNote?: string) {
-    const accessKey = createUserAccessKey()
+  async createUserKey(adminId: string, rawNote?: string, customKey?: string) {
     const note = rawNote?.trim() || null
+    const accessKey = customKey
+      ? normalizeUserAccessKey(customKey)
+      : createUserAccessKey()
     const { keyPrefix, keySuffix } = keyDisplayParts(accessKey)
 
     const user = await prisma.$transaction(async (transaction) => {
       const studio = await transaction.studio.findFirst({ where: { enabled: true } })
       if (!studio) throw notFoundError()
+      if (customKey) {
+        const existing = await transaction.user.findUnique({
+          where: { accessKeyHash: hashUserAccessKey(accessKey) },
+        })
+        if (existing) {
+          throw new AppError(409, 'USER_KEY_EXISTS', '该自定义密钥已存在，请更换')
+        }
+      }
       const created = await transaction.user.create({
         data: {
           accessKeyHash: hashUserAccessKey(accessKey),
+          accessKeyCipher: encryptAccessKey(accessKey),
           keyPrefix,
           keySuffix,
           note,
@@ -290,6 +308,44 @@ export const adminService = {
     })
   },
 
+  async deleteUser(adminId: string, userId: string) {
+    await prisma.$transaction(async (transaction) => {
+      const user = await transaction.user.findUnique({
+        where: { id: userId },
+        include: { _count: { select: { tasks: true } } },
+      })
+      if (!user) throw notFoundError()
+      if (user._count.tasks > 0) {
+        throw new AppError(409, 'USER_HAS_TASKS', '该密钥已有任务记录，无法删除，请改用「停用」')
+      }
+      await transaction.user.delete({ where: { id: userId } })
+      await writeAudit(transaction, {
+        actorId: adminId,
+        action: 'user.deleted',
+        targetType: 'user',
+        targetId: userId,
+        ...(user.note ? { metadata: { note: user.note } } : {}),
+      })
+    })
+  },
+
+  async revealUserKey(adminId: string, userId: string) {
+    return prisma.$transaction(async (transaction) => {
+      const user = await transaction.user.findUnique({ where: { id: userId } })
+      if (!user) throw notFoundError()
+      if (!user.accessKeyCipher) {
+        throw new AppError(404, 'KEY_NOT_STORED', '该密钥创建于「可复制」功能之前，无法查看完整密钥')
+      }
+      await writeAudit(transaction, {
+        actorId: adminId,
+        action: 'user.key_revealed',
+        targetType: 'user',
+        targetId: userId,
+      })
+      return { accessKey: decryptAccessKey(user.accessKeyCipher) }
+    })
+  },
+
   async getStudio() {
     const studio = await prisma.studio.findFirst()
     if (!studio) throw notFoundError()
@@ -323,6 +379,7 @@ export const adminService = {
         where: { id: studio.id },
         data: {
           accessTokenHash: hashToken(rawToken),
+          accessTokenCipher: encryptAccessKey(rawToken),
           tokenVersion: { increment: 1 },
         },
       })

@@ -15,11 +15,12 @@ const STUDIO_ID = '22222222-2222-4222-8222-222222222222'
 const ADMIN_ID = '33333333-3333-4333-8333-333333333333'
 const CREATED_USER_ID = '44444444-4444-4444-8444-444444444444'
 
-function fixtureTask(id: string, status: TaskStatus, index: number): Task {
+function fixtureTask(id: string, status: TaskStatus, index: number, at?: string): Task {
   return {
     id,
     publicId: id,
     url: `https://example.com/${status}`,
+    at,
     status,
     queueSeq: String(index),
     submittedAt: `2026-08-01T0${index}:00:00.000Z`,
@@ -35,14 +36,14 @@ export const mockApiState: {
   studioSession: Principal | null
   tasks: Task[]
   users: User[]
-  studio: { id: string; name: string; enabled: boolean; createdAt: string; updatedAt: string }
+  studio: { id: string; name: string; enabled: boolean; createdAt: string; updatedAt: string; entryUrl: string | null }
 } = {
   userSession: null,
   adminSession: null,
   studioSession: null,
   tasks: [],
   users: [],
-  studio: { id: '', name: '', enabled: true, createdAt: now, updatedAt: now },
+  studio: { id: '', name: '', enabled: true, createdAt: now, updatedAt: now, entryUrl: null },
 }
 
 export function resetMockApiState() {
@@ -50,9 +51,9 @@ export function resetMockApiState() {
   mockApiState.adminSession = { id: ADMIN_ID, role: 'admin', username: 'admin' }
   mockApiState.studioSession = { id: STUDIO_ID, role: 'studio', studioId: STUDIO_ID }
   mockApiState.tasks = [
-    fixtureTask('TASK-1001', 'queued', 1),
+    fixtureTask('TASK-1001', 'queued', 1, 'user@example.com'),
     fixtureTask('TASK-1002', 'processing', 2),
-    fixtureTask('TASK-1003', 'success', 3),
+    fixtureTask('TASK-1003', 'success', 3, '@testuser'),
     fixtureTask('TASK-1004', 'failed', 4),
   ]
   mockApiState.users = [{
@@ -67,6 +68,7 @@ export function resetMockApiState() {
   }]
   mockApiState.studio = {
     id: STUDIO_ID, name: '演示工作室', enabled: true, createdAt: now, updatedAt: now,
+    entryUrl: 'http://localhost/studio/studio-demo-8f3c2a',
   }
 }
 
@@ -85,6 +87,7 @@ function apiTask(task: Task) {
   return {
     publicId: task.id,
     url: task.url,
+    ...(task.at ? { at: task.at } : {}),
     status: task.status,
     queueSeq: task.queueSeq ?? '1',
     submittedAt: task.submittedAt,
@@ -94,6 +97,11 @@ function apiTask(task: Task) {
     ...(task.userLabel ? { userLabel: task.userLabel } : {}),
     version: task.version ?? 0,
   }
+}
+
+function studioApiTask(task: Task) {
+  const { userLabel: _userLabel, ...rest } = apiTask(task)
+  return rest
 }
 
 export function installMockApi() {
@@ -135,7 +143,9 @@ export function installMockApi() {
       })
       for (const item of created) {
         mockApiState.tasks.push({
-          id: item.id, publicId: item.id, url: item.taskUrl, status: 'queued',
+          id: item.id, publicId: item.id, url: item.taskUrl,
+          ...(typeof body.at === 'string' && body.at.trim() ? { at: body.at.trim() } : {}),
+          status: 'queued',
           queueSeq: String(mockApiState.tasks.length + 1), submittedAt: new Date().toISOString(),
           version: 0, userLabel: '客户 A',
         })
@@ -151,7 +161,7 @@ export function installMockApi() {
       return json({ items: [...mockApiState.tasks].reverse().map(apiTask), page: { hasMore: false, nextCursor: null } })
     }
     if (path === '/api/v1/studio/tasks') {
-      return json({ items: mockApiState.tasks.map(apiTask), page: { hasMore: false, nextCursor: null } })
+      return json({ items: mockApiState.tasks.map(studioApiTask), page: { hasMore: false, nextCursor: null } })
     }
     const studioTaskMatch = path.match(/^\/api\/v1\/studio\/tasks\/([^/]+)\/(open|complete|next)$/)
     if (studioTaskMatch && method === 'POST') {
@@ -165,7 +175,7 @@ export function installMockApi() {
         if (next.status === 'queued') {
           next.status = 'processing'; next.processingStartedAt = new Date().toISOString(); next.version = (next.version ?? 0) + 1
         }
-        return json({ task: apiTask(next) })
+        return json({ task: studioApiTask(next) })
       }
       const task = mockApiState.tasks[index]
       if (action === 'open' && task.status === 'queued') {
@@ -174,7 +184,7 @@ export function installMockApi() {
       if (action === 'complete') {
         task.status = body.result as 'success' | 'failed'; task.feedback = String(body.feedback ?? ''); task.completedAt = new Date().toISOString(); task.version = (task.version ?? 0) + 1
       }
-      return json(apiTask(task))
+      return json(studioApiTask(task))
     }
 
     if (path === '/api/v1/admin/dashboard') {
@@ -215,9 +225,10 @@ export function installMockApi() {
       return json({ items: users, page: { hasMore: false, nextCursor: null } })
     }
     if (path === '/api/v1/admin/user-keys' && method === 'POST') {
+      const customKey = typeof body.key === 'string' && body.key.trim() ? body.key.trim() : null
       const user: User = {
         id: CREATED_USER_ID,
-        maskedKey: 'USR-BCDE-••••-••••-QRST',
+        maskedKey: customKey ? `${customKey.slice(0, 8)}-••••-••••-${customKey.slice(-4)}` : 'USR-BCDE-••••-••••-QRST',
         note: String(body.note ?? '').trim() || null,
         studioId: STUDIO_ID,
         enabled: true,
@@ -226,7 +237,13 @@ export function installMockApi() {
         taskCount: 0,
       }
       mockApiState.users.unshift(user)
-      return json({ user, accessKey: 'USR-BCDE-FGHJ-KMNP-QRST' }, 201)
+      return json({ user, accessKey: customKey ?? 'USR-BCDE-FGHJ-KMNP-QRST' }, 201)
+    }
+    const userKeyMatch = path.match(/^\/api\/v1\/admin\/users\/([^/]+)\/key$/)
+    if (userKeyMatch && method === 'GET') {
+      const user = mockApiState.users.find((item) => item.id === userKeyMatch[1])
+      if (!user) return json({ error: { code: 'NOT_FOUND', message: '密钥不存在', requestId: 'test-request' } }, 404)
+      return json({ accessKey: 'USR-BCDE-FGHJ-KMNP-QRST' })
     }
     const userMatch = path.match(/^\/api\/v1\/admin\/users\/([^/]+)$/)
     if (userMatch && method === 'PATCH') {
@@ -234,9 +251,15 @@ export function installMockApi() {
       user.enabled = Boolean(body.enabled)
       return json(user)
     }
+    if (userMatch && method === 'DELETE') {
+      const index = mockApiState.users.findIndex((item) => item.id === userMatch[1])
+      if (index < 0) return json({ error: { code: 'NOT_FOUND', message: '密钥不存在', requestId: 'test-request' } }, 404)
+      mockApiState.users.splice(index, 1)
+      return json(undefined, 204)
+    }
     if (path === '/api/v1/admin/studio' && method === 'GET') return json(mockApiState.studio)
     if (path === '/api/v1/admin/studio' && method === 'PATCH') { mockApiState.studio.name = String(body.name); return json(mockApiState.studio) }
-    if (path === '/api/v1/admin/studio/rotate-access' && method === 'POST') return json({ url: 'http://localhost/studio/new-access' })
+    if (path === '/api/v1/admin/studio/rotate-access' && method === 'POST') { mockApiState.studio.entryUrl = 'http://localhost/studio/new-access'; return json({ url: 'http://localhost/studio/new-access' }) }
     if (path === '/api/v1/admin/audit-logs') return json({ items: [], page: { hasMore: false, nextCursor: null } })
 
     return json({ error: { code: 'NOT_FOUND', message: `No mock for ${method} ${path}`, requestId: 'test-request' } }, 404)
