@@ -4,6 +4,7 @@ import { config } from '../../config.js'
 import { prisma } from '../../db.js'
 import type { PrincipalType } from '../../generated/prisma/enums.js'
 import { createOpaqueToken, hashToken } from '../../lib/tokens.js'
+import { sessionUserLabel } from '../../lib/user-keys.js'
 
 export const sessionCookieNames = {
   user: 'studio_user_session',
@@ -66,7 +67,7 @@ export class SessionService {
         principal = {
           id: user.id,
           role,
-          username: user.username,
+          userLabel: sessionUserLabel(user),
           studioId: user.studioId,
         }
       }

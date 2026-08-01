@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { buildApp } from '../src/app.js'
 import { prisma } from '../src/db.js'
+import { hashUserAccessKey } from '../src/lib/user-keys.js'
 
 const origin = 'http://127.0.0.1:5173'
 const digest = (value: string) => createHash('sha256').update(value).digest('hex')
@@ -16,7 +17,6 @@ function cookiesFrom(response: { headers: Record<string, unknown> }) {
 
 describe('production authentication', () => {
   let app: FastifyInstance
-  const registrationCode = 'registration-code-secret'
   const studioAccessToken = 'studio-access-token-secret'
 
   beforeAll(async () => {
@@ -36,7 +36,6 @@ describe('production authentication', () => {
     await prisma.studio.create({
       data: {
         name: '测试工作室',
-        registrationCodeHash: digest(registrationCode),
         accessTokenHash: digest(studioAccessToken),
       },
     })
@@ -59,35 +58,47 @@ describe('production authentication', () => {
     return { token: response.json().token as string, cookie: cookiesFrom(response) }
   }
 
-  it('registers a user, creates a secure session, and revokes it when disabled', async () => {
+  it('logs in with a normalized access key, updates usage, and revokes disabled sessions', async () => {
+    const studio = await prisma.studio.findFirstOrThrow()
+    const user = await prisma.user.create({
+      data: {
+        accessKeyHash: hashUserAccessKey('USR-ABCD-EFGH-JKMN-PQRS'),
+        keyPrefix: 'USR-ABCD',
+        keySuffix: 'PQRS',
+        note: '客户 A',
+        studioId: studio.id,
+      },
+    })
     const protection = await csrf()
-    const registration = await app.inject({
+    const login = await app.inject({
       method: 'POST',
-      url: `/api/v1/auth/register/${registrationCode}`,
+      url: '/api/v1/auth/user/key-login',
       headers: {
         origin,
         cookie: protection.cookie,
         'x-csrf-token': protection.token,
       },
-      payload: { username: 'demo', password: 'DemoPass123!' },
+      payload: { key: ' usr-abcd-efgh-jkmn-pqrs ' },
     })
 
-    expect(registration.statusCode).toBe(201)
-    expect(registration.json()).toMatchObject({
-      principal: { role: 'user', username: 'demo' },
+    expect(login.statusCode).toBe(200)
+    expect(login.json()).toMatchObject({
+      principal: { role: 'user', userLabel: '客户 A' },
     })
-    expect(String(registration.headers['set-cookie'])).toContain('HttpOnly')
-    expect(String(registration.headers['set-cookie'])).toContain('SameSite=Lax')
+    expect(String(login.headers['set-cookie'])).toContain('HttpOnly')
+    expect(String(login.headers['set-cookie'])).toContain('SameSite=Lax')
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).lastUsedAt).not.toBeNull()
+    expect(await prisma.auditLog.count({ where: { action: 'user.key_login' } })).toBe(1)
 
-    const userCookie = cookiesFrom(registration)
+    const userCookie = cookiesFrom(login)
     const session = await app.inject({
       method: 'GET',
       url: '/api/v1/auth/user/session',
       headers: { cookie: userCookie },
     })
     expect(session.statusCode).toBe(200)
+    expect(session.json().principal.userLabel).toBe('客户 A')
 
-    const user = await prisma.user.findUniqueOrThrow({ where: { normalizedUsername: 'demo' } })
     await prisma.user.update({ where: { id: user.id }, data: { enabled: false } })
 
     const rejected = await app.inject({
@@ -96,6 +107,38 @@ describe('production authentication', () => {
       headers: { cookie: userCookie },
     })
     expect(rejected.statusCode).toBe(401)
+  })
+
+  it('uses one error for unknown and disabled well-formed keys', async () => {
+    const studio = await prisma.studio.findFirstOrThrow()
+    await prisma.user.create({
+      data: {
+        accessKeyHash: hashUserAccessKey('USR-WXYZ-2345-6789-ABCD'),
+        keyPrefix: 'USR-WXYZ',
+        keySuffix: 'ABCD',
+        studioId: studio.id,
+        enabled: false,
+      },
+    })
+
+    for (const key of ['USR-ABCD-EFGH-JKMN-PQRS', 'USR-WXYZ-2345-6789-ABCD']) {
+      const protection = await csrf()
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/user/key-login',
+        headers: {
+          origin,
+          cookie: protection.cookie,
+          'x-csrf-token': protection.token,
+        },
+        payload: { key },
+      })
+      expect(response.statusCode).toBe(401)
+      expect(response.json().error).toMatchObject({
+        code: 'AUTH_INVALID_KEY',
+        message: '密钥无效或已停用',
+      })
+    }
   })
 
   it('uses separate administrator and studio sessions and invalidates rotated studio access', async () => {

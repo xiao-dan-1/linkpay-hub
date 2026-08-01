@@ -1,13 +1,13 @@
 import {
   adminLoginSchema,
-  userLoginSchema,
-  userRegistrationSchema,
+  userKeyLoginSchema,
 } from '@studio/contracts'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { prisma } from '../../db.js'
 import { AppError } from '../../lib/errors.js'
-import { hashPassword, verifyPassword } from '../../lib/passwords.js'
+import { verifyPassword } from '../../lib/passwords.js'
 import { hashToken } from '../../lib/tokens.js'
+import { hashUserAccessKey, sessionUserLabel } from '../../lib/user-keys.js'
 import {
   clearSessionCookie,
   sessionCookieNames,
@@ -39,73 +39,43 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   }))
 
   app.post(
-    '/api/v1/auth/register/:registrationCode',
+    '/api/v1/auth/user/key-login',
     { onRequest: app.csrfProtection },
     async (request, reply) => {
-      const body = userRegistrationSchema.parse(request.body)
-      const { registrationCode } = request.params as { registrationCode: string }
-      const studio = await prisma.studio.findUnique({
-        where: { registrationCodeHash: hashToken(registrationCode) },
+      const body = userKeyLoginSchema.parse(request.body)
+      const user = await prisma.user.findUnique({
+        where: { accessKeyHash: hashUserAccessKey(body.key) },
+        include: { studio: true },
       })
-      if (!studio?.enabled) {
-        throw new AppError(404, 'REGISTRATION_LINK_INVALID', '注册链接无效或已停用')
+      if (!user?.accessKeyHash || !user.enabled || !user.studio.enabled) {
+        throw new AppError(401, 'AUTH_INVALID_KEY', '密钥无效或已停用')
       }
-
-      const normalizedUsername = normalizeUsername(body.username)
-      if (await prisma.user.findUnique({ where: { normalizedUsername } })) {
-        throw new AppError(409, 'USERNAME_TAKEN', '该账号已被使用')
-      }
-
-      const user = await prisma.user.create({
-        data: {
-          username: body.username.trim(),
-          normalizedUsername,
-          passwordHash: await hashPassword(body.password),
-          studioId: studio.id,
-        },
-      })
-      await prisma.auditLog.create({
-        data: {
-          actorType: 'user',
-          actorId: user.id,
-          action: 'user.registered',
-          targetType: 'user',
-          targetId: user.id,
-          ipAddress: request.ip,
-          userAgent: request.headers['user-agent'],
-        },
-      })
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: user.id },
+          data: { lastUsedAt: new Date() },
+        }),
+        prisma.auditLog.create({
+          data: {
+            actorType: 'user',
+            actorId: user.id,
+            action: 'user.key_login',
+            targetType: 'user',
+            targetId: user.id,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent'],
+          },
+        }),
+      ])
       await issueSession(reply, 'user', user.id)
-      return reply.code(201).send({
+      return {
         principal: {
           id: user.id,
           role: 'user',
-          username: user.username,
+          userLabel: sessionUserLabel(user),
           studioId: user.studioId,
         },
-      })
-    },
-  )
-
-  app.post(
-    '/api/v1/auth/user/login',
-    { onRequest: app.csrfProtection },
-    async (request, reply) => {
-      const body = userLoginSchema.parse(request.body)
-      const user = await prisma.user.findUnique({
-        where: { normalizedUsername: normalizeUsername(body.username) },
-        include: { studio: true },
-      })
-      if (!user || !(await verifyPassword(user.passwordHash, body.password))) {
-        throw new AppError(401, 'AUTH_INVALID_CREDENTIALS', '账号或密码错误')
       }
-      if (!user.enabled || !user.studio.enabled) {
-        throw new AppError(403, 'ACCOUNT_DISABLED', '账号已停用')
-      }
-      await issueSession(reply, 'user', user.id)
-      return { principal: {
-        id: user.id, role: 'user', username: user.username, studioId: user.studioId,
-      } }
     },
   )
 
