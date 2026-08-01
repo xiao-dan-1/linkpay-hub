@@ -198,31 +198,34 @@ export function UserWorkbenchPage() {
             <div className="panel-heading"><div><p className="eyebrow">TASK SUBMIT</p><h2>创建任务</h2><p>每行输入一条支付链接，数量不限，系统会自动分批提交。</p></div></div>
             <label className="textarea-label" htmlFor="task-at">AT Token</label>
             <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="eyJhbGci...（每行一个，与链接一一对应）" />
+            {atInput.trim() ? (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+                <button className="button compact ghost" disabled={creatingLink} onClick={async () => {
+                  setCreatingLink(true)
+                  try {
+                    const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
+                    const results: string[] = []
+                    for (let i = 0; i < atLines.length; i++) {
+                      setFeedback(`生成中 ${i + 1}/${atLines.length}…`)
+                      const res = await generatePayLink(atLines[i].trim())
+                      if (res.ok && res.pay_url) results.push(res.pay_url)
+                    }
+                    if (results.length > 0) {
+                      setRawInput((prev) => (prev.trim() ? prev.trim() + '\n' : '') + results.join('\n'))
+                      setFeedback(`已生成 ${results.length} 条链接`)
+                    } else {
+                      setFeedback('未能生成任何链接')
+                    }
+                  } catch (e) {
+                    setFeedback(e instanceof Error ? e.message : '生成失败')
+                  } finally { setCreatingLink(false) }
+                }}>
+                  <Link size={14} />{creatingLink ? '生成中…' : '从 AT 生成链接'}
+                </button>
+              </div>
+            ) : null}
             <label className="textarea-label" htmlFor="task-links">支付链接</label>
             <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
-              <button className="button compact ghost" disabled={creatingLink || !atInput.trim()} onClick={async () => {
-                setCreatingLink(true)
-                try {
-                  const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
-                  const results: string[] = []
-                  for (const at of atLines) {
-                    const res = await generatePayLink(at.trim())
-                    if (res.ok && res.pay_url) results.push(res.pay_url)
-                  }
-                  if (results.length > 0) {
-                    setRawInput((prev) => (prev.trim() ? prev.trim() + '\n' : '') + results.join('\n'))
-                    setFeedback(`已生成 ${results.length} 条链接`)
-                  } else {
-                    setFeedback('未能生成任何链接')
-                  }
-                } catch (e) {
-                  setFeedback(e instanceof Error ? e.message : '生成失败')
-                } finally { setCreatingLink(false) }
-              }}>
-                <Link size={14} />{creatingLink ? '生成中…' : '从 AT 生成链接'}
-              </button>
-            </div>
           <div className="validation-row" aria-live="polite">
             <span>有效 {parsed.valid.length} 条</span>
             {parsed.duplicateCount ? <span>已去重 {parsed.duplicateCount} 条</span> : null}
