@@ -1,4 +1,5 @@
 import {
+  createUserKeySchema,
   taskListQuerySchema,
   updateStudioSchema,
   updateUserEnabledSchema,
@@ -42,6 +43,16 @@ export async function registerAdminRoutes(app: FastifyInstance) {
     return adminService.listUsers(listQuerySchema.parse(request.query))
   })
 
+  app.post(
+    '/api/v1/admin/user-keys',
+    { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
+    async (request, reply) => {
+      const adminId = adminPrincipal(request.principal)
+      const body = createUserKeySchema.parse(request.body)
+      return reply.code(201).send(await adminService.createUserKey(adminId, body.note))
+    },
+  )
+
   app.patch(
     '/api/v1/admin/users/:userId',
     { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
@@ -65,12 +76,6 @@ export async function registerAdminRoutes(app: FastifyInstance) {
       const body = updateStudioSchema.parse(request.body)
       return adminService.updateStudio(adminId, body.name)
     },
-  )
-
-  app.post(
-    '/api/v1/admin/studio/rotate-registration',
-    { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
-    async (request) => adminService.rotateRegistration(adminPrincipal(request.principal)),
   )
 
   app.post(

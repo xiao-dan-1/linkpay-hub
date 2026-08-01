@@ -1,7 +1,12 @@
 import type { Task } from '../../generated/prisma/client.js'
+import { taskUserLabel } from '../../lib/user-keys.js'
 
 type TaskWithOptionalUser = Task & {
-  user?: { username: string }
+  user?: {
+    note: string | null
+    keyPrefix: string | null
+    keySuffix: string | null
+  }
 }
 
 export function serializeTask(task: TaskWithOptionalUser) {
@@ -16,7 +21,7 @@ export function serializeTask(task: TaskWithOptionalUser) {
       : {}),
     ...(task.completedAt ? { completedAt: task.completedAt.toISOString() } : {}),
     ...(task.feedback ? { feedback: task.feedback } : {}),
-    ...(task.user ? { username: task.user.username } : {}),
+    ...(task.user ? { userLabel: taskUserLabel(task.user) } : {}),
     version: task.version,
   }
 }

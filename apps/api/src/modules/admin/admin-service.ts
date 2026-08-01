@@ -5,6 +5,12 @@ import type { Prisma } from '../../generated/prisma/client.js'
 import { writeAudit } from '../../lib/audit.js'
 import { notFoundError } from '../../lib/errors.js'
 import { createOpaqueToken, hashToken } from '../../lib/tokens.js'
+import {
+  createUserAccessKey,
+  hashUserAccessKey,
+  keyDisplayParts,
+  maskUserAccessKey,
+} from '../../lib/user-keys.js'
 import { serializeTask } from '../tasks/serializers.js'
 
 function encodeCursor(value: string) {
@@ -18,19 +24,36 @@ function decodeCursor(value?: string) {
 
 function serializeUser(user: {
   id: string
-  username: string
+  keyPrefix: string | null
+  keySuffix: string | null
+  note: string | null
   studioId: string
   enabled: boolean
   createdAt: Date
+  lastUsedAt: Date | null
+  _count: { tasks: number }
 }) {
   return {
     id: user.id,
-    username: user.username,
+    maskedKey: maskUserAccessKey(user),
+    note: user.note,
     studioId: user.studioId,
     enabled: user.enabled,
     createdAt: user.createdAt.toISOString(),
+    lastUsedAt: user.lastUsedAt?.toISOString() ?? null,
+    taskCount: user._count.tasks,
   }
 }
+
+const userIdentitySelect = {
+  note: true,
+  keyPrefix: true,
+  keySuffix: true,
+} as const
+
+const userCountInclude = {
+  _count: { select: { tasks: true } },
+} as const
 
 function serializeStudio(studio: {
   id: string
@@ -92,12 +115,14 @@ export const adminService = {
           ? { OR: [
               { publicId: { contains: input.search, mode: 'insensitive' } },
               { url: { contains: input.search, mode: 'insensitive' } },
-              { user: { username: { contains: input.search, mode: 'insensitive' } } },
+              { user: { note: { contains: input.search, mode: 'insensitive' } } },
+              { user: { keyPrefix: { contains: input.search, mode: 'insensitive' } } },
+              { user: { keySuffix: { contains: input.search, mode: 'insensitive' } } },
             ] }
           : {}),
         ...(queueSeq !== undefined ? { queueSeq: { lt: queueSeq } } : {}),
       },
-      include: { user: { select: { username: true } } },
+      include: { user: { select: userIdentitySelect } },
       orderBy: { queueSeq: 'desc' },
       take: input.limit + 1,
     })
@@ -117,7 +142,7 @@ export const adminService = {
   async getTask(publicId: string) {
     const task = await prisma.task.findUnique({
       where: { publicId },
-      include: { user: { select: { username: true } } },
+      include: { user: { select: userIdentitySelect } },
     })
     if (!task) throw notFoundError()
     return serializeTask(task)
@@ -127,11 +152,16 @@ export const adminService = {
     const cursor = decodeCursor(input.cursor)
     const users = await prisma.user.findMany({
       where: input.search
-        ? { username: { contains: input.search, mode: 'insensitive' } }
+        ? { OR: [
+            { note: { contains: input.search, mode: 'insensitive' } },
+            { keyPrefix: { contains: input.search, mode: 'insensitive' } },
+            { keySuffix: { contains: input.search, mode: 'insensitive' } },
+          ] }
         : undefined,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       take: input.limit + 1,
+      include: userCountInclude,
     })
     const hasMore = users.length > input.limit
     const items = hasMore ? users.slice(0, input.limit) : users
@@ -146,6 +176,37 @@ export const adminService = {
     }
   },
 
+  async createUserKey(adminId: string, rawNote?: string) {
+    const accessKey = createUserAccessKey()
+    const note = rawNote?.trim() || null
+    const { keyPrefix, keySuffix } = keyDisplayParts(accessKey)
+
+    const user = await prisma.$transaction(async (transaction) => {
+      const studio = await transaction.studio.findFirst({ where: { enabled: true } })
+      if (!studio) throw notFoundError()
+      const created = await transaction.user.create({
+        data: {
+          accessKeyHash: hashUserAccessKey(accessKey),
+          keyPrefix,
+          keySuffix,
+          note,
+          studioId: studio.id,
+        },
+        include: userCountInclude,
+      })
+      await writeAudit(transaction, {
+        actorId: adminId,
+        action: 'user.key_created',
+        targetType: 'user',
+        targetId: created.id,
+        ...(note ? { metadata: { note } } : {}),
+      })
+      return created
+    })
+
+    return { user: serializeUser(user), accessKey }
+  },
+
   async updateUserEnabled(adminId: string, userId: string, enabled: boolean) {
     return prisma.$transaction(async (transaction) => {
       const user = await transaction.user.findUnique({ where: { id: userId } })
@@ -153,6 +214,7 @@ export const adminService = {
       const updated = await transaction.user.update({
         where: { id: userId },
         data: { enabled },
+        include: userCountInclude,
       })
       if (!enabled) {
         await transaction.session.deleteMany({
@@ -161,7 +223,7 @@ export const adminService = {
       }
       await writeAudit(transaction, {
         actorId: adminId,
-        action: 'user.enabled_updated',
+        action: 'user.key_enabled_updated',
         targetType: 'user',
         targetId: userId,
         metadata: { enabled },
@@ -192,25 +254,6 @@ export const adminService = {
       })
       return serializeStudio(updated)
     })
-  },
-
-  async rotateRegistration(adminId: string) {
-    const rawToken = createOpaqueToken()
-    await prisma.$transaction(async (transaction) => {
-      const studio = await transaction.studio.findFirst()
-      if (!studio) throw notFoundError()
-      await transaction.studio.update({
-        where: { id: studio.id },
-        data: { registrationCodeHash: hashToken(rawToken) },
-      })
-      await writeAudit(transaction, {
-        actorId: adminId,
-        action: 'studio.registration_rotated',
-        targetType: 'studio',
-        targetId: studio.id,
-      })
-    })
-    return { url: `${config.APP_ORIGIN}/s/${rawToken}/register` }
   },
 
   async rotateAccess(adminId: string) {

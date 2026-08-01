@@ -6,6 +6,7 @@ import {
   sessionCookieNames,
   sessionService,
 } from '../src/modules/auth/session-service.js'
+import { hashUserAccessKey } from '../src/lib/user-keys.js'
 
 const origin = 'http://127.0.0.1:5173'
 
@@ -38,11 +39,15 @@ describe('administrator API', () => {
     await prisma.studio.deleteMany()
 
     const studio = await prisma.studio.create({ data: {
-      name: '测试工作室', registrationCodeHash: 'reg-admin', accessTokenHash: 'access-admin',
+      name: '测试工作室', accessTokenHash: 'access-admin',
     } })
     studioId = studio.id
     const user = await prisma.user.create({ data: {
-      username: 'demo', normalizedUsername: 'demo', passwordHash: 'hash', studioId,
+      accessKeyHash: hashUserAccessKey('USR-ABCD-EFGH-JKMN-PQRS'),
+      keyPrefix: 'USR-ABCD',
+      keySuffix: 'PQRS',
+      note: '客户 A',
+      studioId,
     } })
     userId = user.id
     const admin = await prisma.admin.create({ data: {
@@ -100,19 +105,57 @@ describe('administrator API', () => {
       method: 'GET', url: '/api/v1/admin/tasks/TASK-FOUR', headers: { cookie: adminCookie },
     })
     expect(detail.statusCode).toBe(200)
-    expect(detail.json()).toMatchObject({ publicId: 'TASK-FOUR', username: 'demo' })
+    expect(detail.json()).toMatchObject({ publicId: 'TASK-FOUR', userLabel: '客户 A' })
 
     const users = await app.inject({
       method: 'GET', url: '/api/v1/admin/users', headers: { cookie: adminCookie },
     })
     expect(users.statusCode).toBe(200)
-    expect(users.json().items[0]).toMatchObject({ id: userId, username: 'demo', enabled: true })
+    expect(users.json().items[0]).toMatchObject({
+      id: userId,
+      maskedKey: 'USR-ABCD-••••-••••-PQRS',
+      note: '客户 A',
+      enabled: true,
+      taskCount: 4,
+    })
 
     const audits = await app.inject({
       method: 'GET', url: '/api/v1/admin/audit-logs', headers: { cookie: adminCookie },
     })
     expect(audits.statusCode).toBe(200)
     expect(audits.json().items[0]).toMatchObject({ action: 'fixture.created' })
+  })
+
+  it('creates a reusable key, returns it once, and lists only safe metadata', async () => {
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/v1/admin/user-keys',
+      headers: writeHeaders(),
+      payload: { note: '客户 B' },
+    })
+    expect(created.statusCode).toBe(201)
+    const payload = created.json()
+    expect(payload.accessKey).toMatch(/^USR-[A-HJ-NP-Z2-9]{4}(?:-[A-HJ-NP-Z2-9]{4}){3}$/)
+    expect(payload.user).toMatchObject({ note: '客户 B', enabled: true, taskCount: 0 })
+
+    const stored = await prisma.user.findUniqueOrThrow({ where: { id: payload.user.id } })
+    expect(stored.accessKeyHash).toHaveLength(64)
+    expect(stored.accessKeyHash).not.toBe(payload.accessKey)
+
+    const listed = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/users?search=%E5%AE%A2%E6%88%B7%20B',
+      headers: { cookie: adminCookie },
+    })
+    expect(listed.statusCode).toBe(200)
+    expect(listed.json().items).toHaveLength(1)
+    expect(listed.json().items[0]).toMatchObject({
+      id: payload.user.id,
+      note: '客户 B',
+      maskedKey: expect.stringContaining('••••'),
+    })
+    expect(JSON.stringify(listed.json())).not.toContain(payload.accessKey)
+    expect(await prisma.auditLog.count({ where: { action: 'user.key_created' } })).toBe(1)
   })
 
   it('disables a user and revokes all user sessions in the same operation', async () => {
@@ -129,10 +172,10 @@ describe('administrator API', () => {
       method: 'GET', url: '/api/v1/auth/user/session', headers: { cookie: userCookie },
     })
     expect(rejected.statusCode).toBe(401)
-    expect(await prisma.auditLog.count({ where: { action: 'user.enabled_updated' } })).toBe(1)
+    expect(await prisma.auditLog.count({ where: { action: 'user.key_enabled_updated' } })).toBe(1)
   })
 
-  it('updates the studio and rotates one-time registration and access links', async () => {
+  it('updates the studio and rotates its one-time access link', async () => {
     const studio = await prisma.studio.findUniqueOrThrow({ where: { id: studioId } })
     const oldStudioSession = await sessionService.create('studio', studioId, studio.tokenVersion)
     const oldStudioCookie = `${sessionCookieNames.studio}=${oldStudioSession.rawToken}`
@@ -150,12 +193,6 @@ describe('administrator API', () => {
     expect(renamed.statusCode).toBe(200)
     expect(renamed.json().name).toBe('正式工作室')
 
-    const registration = await app.inject({
-      method: 'POST', url: '/api/v1/admin/studio/rotate-registration', headers: writeHeaders(),
-    })
-    expect(registration.statusCode).toBe(200)
-    expect(registration.json().url).toMatch(/^http:\/\/127\.0\.0\.1:5173\/s\/.+\/register$/)
-
     const access = await app.inject({
       method: 'POST', url: '/api/v1/admin/studio/rotate-access', headers: writeHeaders(),
     })
@@ -166,7 +203,7 @@ describe('administrator API', () => {
     })
     expect(rejected.statusCode).toBe(401)
     expect(await prisma.auditLog.count({
-      where: { action: { in: ['studio.updated', 'studio.registration_rotated', 'studio.access_rotated'] } },
-    })).toBe(3)
+      where: { action: { in: ['studio.updated', 'studio.access_rotated'] } },
+    })).toBe(2)
   })
 })
