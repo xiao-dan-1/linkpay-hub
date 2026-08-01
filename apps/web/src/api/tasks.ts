@@ -95,3 +95,24 @@ export async function nextStudioTask(publicId: string) {
   return response.task ? toTask(response.task) : null
 }
 
+export async function updateTask(
+  publicId: string,
+  url: string,
+  at: string | undefined,
+  version: number,
+) {
+  const body: Record<string, unknown> = { url, version }
+  if (at !== undefined) body.at = at
+  return toTask(taskSchema.parse(await apiRequest(
+    `/api/v1/user/tasks/${encodeURIComponent(publicId)}`,
+    { method: 'PATCH', body },
+  )))
+}
+
+export async function deleteTask(publicId: string) {
+  await apiRequest(
+    `/api/v1/user/tasks/${encodeURIComponent(publicId)}`,
+    { method: 'DELETE' },
+  )
+}
+

@@ -2,18 +2,22 @@ import {
   CheckCircle2,
   Clock3,
   Layers3,
+  Pen,
   RefreshCw,
   LoaderCircle,
   LogOut,
   Search,
   Send,
+  Trash2,
   XCircle,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { listUserTasks, submitTasks } from '../../api/tasks'
+import { deleteTask, listUserTasks, submitTasks, updateTask } from '../../api/tasks'
 import { useAuth } from '../../auth/AuthContext'
 import { AppShell } from '../../components/AppShell'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { ModalFrame } from '../../components/ModalFrame'
 import { StatCard } from '../../components/StatCard'
 import { TaskDetails } from '../../components/TaskDetails'
 import { TaskList } from '../../components/TaskList'
@@ -37,6 +41,11 @@ export function UserWorkbenchPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [editUrl, setEditUrl] = useState('')
+  const [editAt, setEditAt] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [deletingTask, setDeletingTask] = useState<Task | null>(null)
 
   const refreshTasks = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -127,6 +136,47 @@ export function UserWorkbenchPage() {
     }
   }
 
+  const startEdit = (task: Task) => {
+    setEditingTask(task)
+    setEditUrl(task.url)
+    setEditAt(task.at ?? '')
+  }
+
+  const saveEdit = async () => {
+    if (!editingTask) return
+    setSaving(true)
+    try {
+      const updated = await updateTask(
+        editingTask.publicId!,
+        editUrl.trim(),
+        editAt.trim() || undefined,
+        editingTask.version!,
+      )
+      setTasks((current) => current.map((t) => t.id === updated.id ? updated : t))
+      setSelectedTask((current) => current?.id === updated.id ? updated : current)
+      setFeedback('任务已更新')
+      setEditingTask(null)
+    } catch (cause) {
+      setFeedback(cause instanceof Error ? cause.message : '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deletingTask) return
+    try {
+      await deleteTask(deletingTask.publicId!)
+      setTasks((current) => current.filter((t) => t.id !== deletingTask.id))
+      if (selectedTask?.id === deletingTask.id) setSelectedTask(null)
+      setFeedback('任务已删除')
+    } catch (cause) {
+      setFeedback(cause instanceof Error ? cause.message : '删除失败')
+    } finally {
+      setDeletingTask(null)
+    }
+  }
+
   const signOut = async () => {
     await logoutUser()
     navigate('/login')
@@ -182,10 +232,42 @@ export function UserWorkbenchPage() {
               <label><span className="sr-only">状态筛选</span><select aria-label="状态筛选" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="all">全部状态</option><option value="queued">排队中</option><option value="processing">处理中</option><option value="success">成功</option><option value="failed">失败</option></select></label>
             </div>
           </div>
-          {loading ? <div className="empty-state"><p>正在加载任务…</p></div> : <TaskList tasks={filteredTasks} users={[]} onSelect={setSelectedTask} />}
+          {loading ? <div className="empty-state"><p>正在加载任务…</p></div> : <TaskList tasks={filteredTasks} users={[]} onSelect={setSelectedTask} onEdit={startEdit} onDelete={setDeletingTask} />}
         </section>
       </AppShell>
       <TaskDetails task={selectedTask} onClose={() => setSelectedTask(null)} />
+
+      <ModalFrame open={editingTask !== null} title="编辑任务" onDismiss={() => setEditingTask(null)}>
+        <h2>编辑任务</h2>
+        <p className="muted">{editingTask?.id}</p>
+        <div className="key-create-form">
+          <label htmlFor="edit-url">支付链接</label>
+          <input id="edit-url" data-autofocus value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" />
+          <small>{editUrl.length}/8192</small>
+        </div>
+        <div className="key-create-form">
+          <label htmlFor="edit-at">AT Token</label>
+          <textarea id="edit-at" rows={3} value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
+          <small>{editAt.length}/8192</small>
+        </div>
+        <div className="modal-actions">
+          <button className="button ghost" disabled={saving} onClick={() => setEditingTask(null)}>取消</button>
+          <button className="button" disabled={saving || !editUrl.trim()} onClick={() => void saveEdit()}>
+            <Pen size={17} />{saving ? '保存中…' : '保存修改'}
+          </button>
+        </div>
+      </ModalFrame>
+
+      <ConfirmDialog
+        open={deletingTask !== null}
+        title="确认删除任务"
+        description={`删除后任务 ${deletingTask?.id ?? ''} 将永久移除且不可恢复。`}
+        confirmLabel="确认删除"
+        tone="danger"
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeletingTask(null)}
+      />
+
       <ToastRegion message={feedback} />
     </>
   )

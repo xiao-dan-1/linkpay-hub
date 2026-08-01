@@ -3,6 +3,7 @@ import type {
   CompleteTaskInput,
   CreateTaskChunkInput,
   TaskStatus,
+  UpdateTaskInput,
 } from '@linkpay/contracts'
 import { prisma } from '../../db.js'
 import { Prisma } from '../../generated/prisma/client.js'
@@ -181,6 +182,83 @@ export const taskService = {
     const task = await prisma.task.findFirst({ where: { userId, publicId } })
     if (!task) throw notFoundError()
     return serializeTask(task)
+  },
+
+  async updateTask(
+    userId: string,
+    publicId: string,
+    input: UpdateTaskInput,
+  ) {
+    return prisma.$transaction(async (transaction) => {
+      const task = await transaction.task.findFirst({
+        where: { userId, publicId },
+      })
+      if (!task) throw notFoundError()
+
+      if (task.status !== 'queued') {
+        throw new AppError(409, 'TASK_NOT_EDITABLE', '只有排队中的任务可以编辑')
+      }
+
+      const updated = await transaction.task.updateMany({
+        where: {
+          id: task.id,
+          userId,
+          status: 'queued',
+          version: input.version,
+        },
+        data: {
+          url: input.url,
+          at: input.at ?? null,
+          version: { increment: 1 },
+        },
+      })
+      if (updated.count !== 1) {
+        throw new AppError(409, 'TASK_STATE_CONFLICT', '任务已被其他操作修改，请刷新后重试')
+      }
+
+      await transaction.auditLog.create({
+        data: {
+          actorType: 'user',
+          actorId: userId,
+          action: 'task.updated',
+          targetType: 'task',
+          targetId: task.id,
+          metadata: { publicId: task.publicId },
+        },
+      })
+
+      const current = await transaction.task.findUniqueOrThrow({
+        where: { id: task.id },
+        include: { user: { select: { note: true, keyPrefix: true, keySuffix: true } } },
+      })
+      return serializeTask(current)
+    })
+  },
+
+  async deleteTask(userId: string, publicId: string) {
+    return prisma.$transaction(async (transaction) => {
+      const task = await transaction.task.findFirst({
+        where: { userId, publicId },
+      })
+      if (!task) throw notFoundError()
+
+      if (task.status !== 'queued' && task.status !== 'failed') {
+        throw new AppError(409, 'TASK_NOT_DELETABLE', '只有排队中或失败的任务可以删除')
+      }
+
+      await transaction.task.delete({ where: { id: task.id } })
+
+      await transaction.auditLog.create({
+        data: {
+          actorType: 'user',
+          actorId: userId,
+          action: 'task.deleted',
+          targetType: 'task',
+          targetId: task.id,
+          metadata: { publicId: task.publicId, status: task.status },
+        },
+      })
+    })
   },
 
   async listStudioTasks(input: {

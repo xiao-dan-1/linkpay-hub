@@ -2,6 +2,7 @@ import {
   createTaskBatchSchema,
   createTaskChunkSchema,
   taskListQuerySchema,
+  updateTaskSchema,
 } from '@linkpay/contracts'
 import type { SessionPrincipal } from '@linkpay/contracts'
 import type { FastifyInstance } from 'fastify'
@@ -63,6 +64,27 @@ export async function registerUserTaskRoutes(app: FastifyInstance) {
       const principal = userPrincipal(request.principal)
       const { publicId } = request.params as { publicId: string }
       return taskService.getUserTask(principal.id, publicId)
+    },
+  )
+
+  app.patch(
+    '/api/v1/user/tasks/:publicId',
+    { onRequest: app.csrfProtection, preHandler: app.requireUser },
+    async (request) => {
+      const principal = userPrincipal(request.principal)
+      const { publicId } = request.params as { publicId: string }
+      return taskService.updateTask(principal.id, publicId, updateTaskSchema.parse(request.body))
+    },
+  )
+
+  app.delete(
+    '/api/v1/user/tasks/:publicId',
+    { onRequest: app.csrfProtection, preHandler: app.requireUser },
+    async (request, reply) => {
+      const principal = userPrincipal(request.principal)
+      const { publicId } = request.params as { publicId: string }
+      await taskService.deleteTask(principal.id, publicId)
+      return reply.code(204).send()
     },
   )
 }

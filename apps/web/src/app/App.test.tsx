@@ -11,6 +11,6 @@ describe('App', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByText('任务工作台')).toBeInTheDocument()
+    expect(screen.getByText('LinkPay Hub')).toBeInTheDocument()
   })
 })

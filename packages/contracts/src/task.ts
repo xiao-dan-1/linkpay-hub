@@ -61,6 +61,12 @@ export const completeTaskSchema = z.object({
   version: z.number().int().nonnegative(),
 })
 
+export const updateTaskSchema = z.object({
+  url: paymentUrlSchema,
+  at: z.string().max(8192).optional(),
+  version: z.number().int().nonnegative(),
+})
+
 export const taskListQuerySchema = z.object({
   status: taskStatusSchema.optional(),
   search: z.string().trim().max(500).optional(),
@@ -81,3 +87,4 @@ export type TaskStatus = z.infer<typeof taskStatusSchema>
 export type Task = z.infer<typeof taskSchema>
 export type CreateTaskChunkInput = z.infer<typeof createTaskChunkSchema>
 export type CompleteTaskInput = z.infer<typeof completeTaskSchema>
+export type UpdateTaskInput = z.infer<typeof updateTaskSchema>

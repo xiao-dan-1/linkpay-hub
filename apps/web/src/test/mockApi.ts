@@ -160,6 +160,26 @@ export function installMockApi() {
     if (path === '/api/v1/user/tasks') {
       return json({ items: [...mockApiState.tasks].reverse().map(apiTask), page: { hasMore: false, nextCursor: null } })
     }
+    const userTaskMatch = path.match(/^\/api\/v1\/user\/tasks\/([^/]+)$/)
+    if (userTaskMatch) {
+      const id = decodeURIComponent(userTaskMatch[1])
+      const index = mockApiState.tasks.findIndex((task) => task.id === id)
+      if (index < 0) return json({ error: { code: 'NOT_FOUND', message: '任务不存在', requestId: 'test-request' } }, 404)
+      if (method === 'PATCH') {
+        const task = mockApiState.tasks[index]
+        if (task.status !== 'queued') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中的任务可以编辑', requestId: 'test-request' } }, 409)
+        task.url = body.url
+        task.at = body.at ?? undefined
+        task.version = (task.version ?? 0) + 1
+        return json(apiTask(task))
+      }
+      if (method === 'DELETE') {
+        const task = mockApiState.tasks[index]
+        if (task.status !== 'queued' && task.status !== 'failed') return json({ error: { code: 'TASK_NOT_DELETABLE', message: '只有排队中或失败的任务可以删除', requestId: 'test-request' } }, 409)
+        mockApiState.tasks.splice(index, 1)
+        return json(null, 204)
+      }
+    }
     if (path === '/api/v1/studio/tasks') {
       return json({ items: mockApiState.tasks.map(studioApiTask), page: { hasMore: false, nextCursor: null } })
     }
