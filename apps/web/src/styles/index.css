@@ -552,6 +552,22 @@ a {
   margin-top: 4px;
 }
 
+.remember-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.remember-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary);
+}
+
 .auth-footnote {
   margin: 18px 0 10px;
   font-size: 13px;

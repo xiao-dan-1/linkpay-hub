@@ -1,16 +1,27 @@
 import { ArrowRight, Eye, EyeOff, KeyRound, ShieldCheck, UserRound } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 
 export function AdminLoginPage() {
   const { loginAdmin } = useAuth()
   const navigate = useNavigate()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState(() => localStorage.getItem('saved_admin_user') || '')
+  const [password, setPassword] = useState(() => localStorage.getItem('saved_admin_pw') || '')
+  const [remember, setRemember] = useState(() => !!localStorage.getItem('saved_admin_user'))
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [showPw, setShowPw] = useState(false)
+
+  useEffect(() => {
+    if (remember) {
+      localStorage.setItem('saved_admin_user', username.trim())
+      localStorage.setItem('saved_admin_pw', password)
+    } else {
+      localStorage.removeItem('saved_admin_user')
+      localStorage.removeItem('saved_admin_pw')
+    }
+  }, [remember, username, password])
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -18,6 +29,10 @@ export function AdminLoginPage() {
     setSubmitting(true)
     try {
       await loginAdmin(username.trim(), password)
+      if (remember) {
+        localStorage.setItem('saved_admin_user', username.trim())
+        localStorage.setItem('saved_admin_pw', password)
+      }
       navigate('/admin/dashboard')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '登录失败')
@@ -38,6 +53,7 @@ export function AdminLoginPage() {
         <form onSubmit={onSubmit} className="form-stack">
           <label><span>管理员账号</span><div className="input-with-icon"><UserRound size={17} /><input aria-label="管理员账号" value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required /></div></label>
           <label><span>管理员密码</span><div className="input-with-icon"><KeyRound size={17} /><input aria-label="管理员密码" type={showPw ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /><button type="button" className="icon-button" style={{ width: 32, height: 32 }} aria-label={showPw ? '隐藏密码' : '显示密码'} onClick={() => setShowPw(!showPw)}>{showPw ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></label>
+          <label className="remember-label"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /> 记住账号密码</label>
           {error ? <p className="form-error" role="alert">{error}</p> : null}
           <button className="button auth-submit" type="submit" disabled={submitting}>{submitting ? '正在登录…' : '进入管理后台'} <ArrowRight size={17} /></button>
         </form>

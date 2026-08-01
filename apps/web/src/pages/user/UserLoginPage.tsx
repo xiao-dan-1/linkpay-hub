@@ -1,22 +1,28 @@
 import { ArrowRight, KeyRound } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 
 export function UserLoginPage() {
   const { loginUser } = useAuth()
   const navigate = useNavigate()
-  const [accessKey, setAccessKey] = useState('')
+  const [accessKey, setAccessKey] = useState(() => localStorage.getItem('saved_user_key') || '')
+  const [remember, setRemember] = useState(() => !!localStorage.getItem('saved_user_key'))
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (remember && accessKey.trim()) localStorage.setItem('saved_user_key', accessKey.trim())
+    else if (!remember) localStorage.removeItem('saved_user_key')
+  }, [remember, accessKey])
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
-
     setSubmitting(true)
     try {
       await loginUser(accessKey.trim())
+      if (remember) localStorage.setItem('saved_user_key', accessKey.trim())
       navigate('/user/workbench')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '登录失败')
@@ -45,6 +51,7 @@ export function UserLoginPage() {
             <span>访问密钥</span>
             <div className="input-with-icon"><KeyRound size={17} /><input aria-label="访问密钥" value={accessKey} onChange={(event) => setAccessKey(event.target.value)} autoComplete="off" spellCheck={false} placeholder="输入访问密钥" required /></div>
           </label>
+          <label className="remember-label"><input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} /> 记住密钥</label>
           {error ? <p className="form-error" role="alert">{error}</p> : null}
           <button className="button auth-submit" type="submit" disabled={submitting}>{submitting ? '正在登录…' : '进入工作台'} <ArrowRight size={17} /></button>
         </form>
