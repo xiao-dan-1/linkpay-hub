@@ -199,10 +199,10 @@ export function UserWorkbenchPage() {
             <label className="textarea-label" htmlFor="task-at">AT Token</label>
             <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="eyJhbGci...（每行一个，与链接一一对应）" />
             <label className="textarea-label" htmlFor="task-links">支付链接</label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} style={{ flex: 1 }} />
-              {atInput.trim() ? (
-                <button className="button compact ghost" style={{ flexShrink: 0 }} disabled={creatingLink} onClick={async () => {
+            <textarea id="task-links" className="submit-textarea" aria-label="任务链接" rows={3} value={rawInput} onChange={(event) => setRawInput(event.target.value)} placeholder={'https://pay.example.com/…（每行一个支付链接）'} />
+            {atInput.trim() ? (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+                <button className="button compact ghost" disabled={creatingLink} onClick={async () => {
                   setCreatingLink(true)
                   try {
                     const atLines = atInput.split(/\r?\n/).filter(l => l.trim())
@@ -224,8 +224,8 @@ export function UserWorkbenchPage() {
                 }}>
                   <Link size={14} />{creatingLink ? '生成中…' : '从 AT 生成链接'}
                 </button>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           <div className="validation-row" aria-live="polite">
             <span>有效 {parsed.valid.length} 条</span>
             {parsed.duplicateCount ? <span>已去重 {parsed.duplicateCount} 条</span> : null}

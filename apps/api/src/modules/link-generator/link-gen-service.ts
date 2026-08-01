@@ -46,8 +46,8 @@ export async function generateKakaoPayLink(
 
   const jobId = data.jobs[0].id
 
-  // 2. Poll for completion (max 30s, every 2s)
-  for (let i = 0; i < 15; i++) {
+  // 2. Poll for completion (max 60s, every 2s)
+  for (let i = 0; i < 30; i++) {
     await sleep(2000)
     let pollRes: Response
     try {
