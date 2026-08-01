@@ -28,30 +28,31 @@ enum AuditActorType {
 }
 
 model Studio {
-  id                   String   @id @default(uuid())
-  name                 String
-  registrationCodeHash String   @unique
-  accessTokenHash      String   @unique
-  tokenVersion         Int      @default(0)
-  enabled              Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  users                User[]
-  tasks                Task[]
+  id              String   @id @default(uuid())
+  name            String
+  accessTokenHash String   @unique
+  tokenVersion    Int      @default(0)
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  users           User[]
+  tasks           Task[]
 }
 
 model User {
-  id                 String            @id @default(uuid())
-  username           String
-  normalizedUsername String            @unique
-  passwordHash       String
-  studioId           String
-  enabled            Boolean           @default(true)
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  studio             Studio            @relation(fields: [studioId], references: [id], onDelete: Restrict)
-  tasks              Task[]
-  submissionBatches  SubmissionBatch[]
+  id                String            @id @default(uuid())
+  accessKeyHash     String?           @unique
+  keyPrefix         String?
+  keySuffix         String?
+  note              String?
+  lastUsedAt        DateTime?
+  studioId          String
+  enabled           Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  studio            Studio            @relation(fields: [studioId], references: [id], onDelete: Restrict)
+  tasks             Task[]
+  submissionBatches SubmissionBatch[]
 
   @@index([studioId])
 }

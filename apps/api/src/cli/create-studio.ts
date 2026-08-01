@@ -10,15 +10,12 @@ if (!name || !appOrigin) {
 if (await prisma.studio.findFirst()) {
   throw new Error('A studio already exists')
 }
-const registrationCode = createOpaqueToken()
 const accessToken = createOpaqueToken()
 await prisma.studio.create({
   data: {
     name,
-    registrationCodeHash: hashToken(registrationCode),
     accessTokenHash: hashToken(accessToken),
   },
 })
 await prisma.$disconnect()
-console.log(`Registration URL: ${appOrigin}/s/${registrationCode}/register`)
 console.log(`Studio URL: ${appOrigin}/studio/${accessToken}`)

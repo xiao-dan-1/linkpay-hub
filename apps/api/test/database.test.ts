@@ -19,15 +19,15 @@ describe('database schema', () => {
     const studio = await prisma.studio.create({
       data: {
         name: '测试工作室',
-        registrationCodeHash: 'registration-hash',
         accessTokenHash: 'access-hash',
       },
     })
     const user = await prisma.user.create({
       data: {
-        username: 'demo',
-        normalizedUsername: 'demo',
-        passwordHash: 'password-hash',
+        accessKeyHash: 'a'.repeat(64),
+        keyPrefix: 'USR-ABCD',
+        keySuffix: 'PQRS',
+        note: '数据库样本',
         studioId: studio.id,
       },
     })
@@ -49,5 +49,6 @@ describe('database schema', () => {
     })
 
     expect(second.queueSeq > first.queueSeq).toBe(true)
+    expect(user.note).toBe('数据库样本')
   })
 })
