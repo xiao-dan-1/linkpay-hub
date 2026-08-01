@@ -92,8 +92,13 @@ export function AdminTasksPage() {
         <h2>编辑任务</h2>
         <p className="muted">{editingTask?.id}</p>
         <div className="key-create-form">
-          <label htmlFor="edit-at">
-            AT Token
+          <label htmlFor="edit-at">AT Token</label>
+          <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
+          <small>{editAt.length}/8192</small>
+        </div>
+        <div className="key-create-form">
+          <label htmlFor="edit-url">
+            支付链接
             {editAt.trim() ? (
               <button className="button compact ghost" style={{ marginLeft: 10, fontSize: 12 }} disabled={generating} onClick={async () => {
                 setGenerating(true)
@@ -105,15 +110,10 @@ export function AdminTasksPage() {
                   setFeedback(e instanceof Error ? e.message : '生成失败')
                 } finally { setGenerating(false) }
               }}>
-                <Link size={13} />{generating ? '生成中…' : '生成链接 ↓'}
+                <Link size={13} />{generating ? '生成中…' : '生成链接'}
               </button>
             ) : null}
           </label>
-          <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
-          <small>{editAt.length}/8192</small>
-        </div>
-        <div className="key-create-form">
-          <label htmlFor="edit-url">支付链接</label>
           <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" />
           <small>{editUrl.length}/8192</small>
         </div>
