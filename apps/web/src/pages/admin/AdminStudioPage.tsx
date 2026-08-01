@@ -4,24 +4,20 @@ import {
   getDashboard,
   getStudio,
   rotateAccess,
-  rotateRegistration,
   updateStudio,
 } from '../../api/admin'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { ToastRegion } from '../../components/ToastRegion'
 import type { Studio } from '../../domain/models'
 
-type Rotation = 'registration' | 'access' | null
-
 export function AdminStudioPage() {
   const [studio, setStudio] = useState<Studio | null>(null)
   const [name, setName] = useState('')
   const [userCount, setUserCount] = useState(0)
   const [taskCount, setTaskCount] = useState(0)
-  const [registrationLink, setRegistrationLink] = useState('')
   const [studioLink, setStudioLink] = useState('')
   const [feedback, setFeedback] = useState('')
-  const [pendingRotation, setPendingRotation] = useState<Rotation>(null)
+  const [pendingRotation, setPendingRotation] = useState(false)
 
   useEffect(() => {
     Promise.all([getStudio(), getDashboard()])
@@ -50,17 +46,12 @@ export function AdminStudioPage() {
   const rotate = async () => {
     if (!pendingRotation) return
     try {
-      if (pendingRotation === 'registration') {
-        setRegistrationLink(await rotateRegistration())
-        setFeedback('已生成新的用户注册链接，旧链接立即失效')
-      } else {
-        setStudioLink(await rotateAccess())
-        setFeedback('已生成新的工作室入口，旧入口会话已失效')
-      }
+      setStudioLink(await rotateAccess())
+      setFeedback('已生成新的工作室入口，旧入口会话已失效')
     } catch (cause) {
       setFeedback(cause instanceof Error ? cause.message : '入口轮换失败')
     } finally {
-      setPendingRotation(null)
+      setPendingRotation(false)
     }
   }
 
@@ -72,12 +63,12 @@ export function AdminStudioPage() {
 
   return (
     <>
-      <header className="admin-page-header"><div><p className="eyebrow">STUDIO SETTINGS</p><h1>工作室设置</h1><p>维护唯一工作室名称和两个专属入口。</p></div><span className="identity-chip"><Check size={15} />{studio?.enabled ? '已启用' : '加载中'}</span></header>
+      <header className="admin-page-header"><div><p className="eyebrow">STUDIO SETTINGS</p><h1>工作室设置</h1><p>维护唯一工作室名称和工作室专属入口。</p></div><span className="identity-chip"><Check size={15} />{studio?.enabled ? '已启用' : '加载中'}</span></header>
       <section className="studio-settings-grid">
-        <article className="panel settings-card"><div className="settings-card-heading"><span className="settings-icon"><Building2 size={21} /></span><div><h2>基本信息</h2><p>当前正式环境配置一个工作室。</p></div></div><label className="settings-field"><span>工作室名称</span><input aria-label="工作室名称" value={name} onChange={(event) => setName(event.target.value)} /></label><button className="button" onClick={() => void saveName()}><Save size={17} />保存名称</button><div className="studio-metrics"><div><Users size={18} /><span>绑定用户</span><strong>{userCount}</strong></div><div><Link2 size={18} /><span>任务总数</span><strong>{taskCount}</strong></div></div></article>
-        <article className="panel settings-card links-card"><div className="settings-card-heading"><span className="settings-icon"><KeyRound size={21} /></span><div><h2>专属入口</h2><p>现有密钥不会回显，轮换后新链接只展示一次。</p></div></div><div className="link-setting"><label htmlFor="registration-link">新用户注册链接</label><div><input id="registration-link" readOnly value={registrationLink} placeholder="点击轮换后显示一次" /><button className="icon-button" disabled={!registrationLink} aria-label="复制用户注册链接" onClick={() => void copyLink(registrationLink, '用户注册链接')}><Copy size={17} /></button></div><button className="button secondary compact" onClick={() => setPendingRotation('registration')}><RotateCcw size={16} />轮换注册链接</button></div><div className="link-setting"><label htmlFor="studio-link">新工作室工作台链接</label><div><input id="studio-link" readOnly value={studioLink} placeholder="点击轮换后显示一次" /><button className="icon-button" disabled={!studioLink} aria-label="复制工作室工作台链接" onClick={() => void copyLink(studioLink, '工作室工作台链接')}><Copy size={17} /></button></div><button className="button secondary compact" onClick={() => setPendingRotation('access')}><RotateCcw size={16} />轮换工作室入口</button></div></article>
+        <article className="panel settings-card"><div className="settings-card-heading"><span className="settings-icon"><Building2 size={21} /></span><div><h2>基本信息</h2><p>当前正式环境配置一个工作室。</p></div></div><label className="settings-field"><span>工作室名称</span><input aria-label="工作室名称" value={name} onChange={(event) => setName(event.target.value)} /></label><button className="button" onClick={() => void saveName()}><Save size={17} />保存名称</button><div className="studio-metrics"><div><Users size={18} /><span>用户密钥</span><strong>{userCount}</strong></div><div><Link2 size={18} /><span>任务总数</span><strong>{taskCount}</strong></div></div></article>
+        <article className="panel settings-card links-card"><div className="settings-card-heading"><span className="settings-icon"><KeyRound size={21} /></span><div><h2>工作室入口</h2><p>入口令牌不会回显，轮换后的新链接只展示一次。</p></div></div><div className="link-setting"><label htmlFor="studio-link">新工作室工作台链接</label><div><input id="studio-link" readOnly value={studioLink} placeholder="点击轮换后显示一次" /><button className="icon-button" disabled={!studioLink} aria-label="复制工作室工作台链接" onClick={() => void copyLink(studioLink, '工作室工作台链接')}><Copy size={17} /></button></div><button className="button secondary compact" onClick={() => setPendingRotation(true)}><RotateCcw size={16} />轮换工作室入口</button></div></article>
       </section>
-      <ConfirmDialog open={pendingRotation !== null} title={pendingRotation === 'registration' ? '确认轮换注册链接' : '确认轮换工作室入口'} description={pendingRotation === 'registration' ? '旧注册链接将立即失效。新链接只展示一次，请及时复制。' : '旧工作室入口及已有工作室会话将失效。新链接只展示一次。'} confirmLabel="确认轮换" onConfirm={() => void rotate()} onCancel={() => setPendingRotation(null)} />
+      <ConfirmDialog open={pendingRotation} title="确认轮换工作室入口" description="旧工作室入口及已有工作室会话将失效。新链接只展示一次。" confirmLabel="确认轮换" onConfirm={() => void rotate()} onCancel={() => setPendingRotation(false)} />
       <ToastRegion message={feedback} />
     </>
   )

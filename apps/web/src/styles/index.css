@@ -1128,6 +1128,10 @@ a {
   border-collapse: collapse;
 }
 
+.key-table {
+  min-width: 1040px;
+}
+
 .user-table th,
 .user-table td {
   padding: 14px;
@@ -1157,6 +1161,96 @@ a {
   background: var(--primary-soft);
   color: var(--primary-dark);
   font-size: 13px;
+}
+
+.key-identity {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.key-mask,
+.key-value {
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+
+.key-mask {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.key-note {
+  font-weight: 700;
+}
+
+.key-modal {
+  width: min(520px, 100%);
+}
+
+.key-modal-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 16px;
+  border-radius: 13px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+.key-modal-icon.success {
+  background: #ecfdf3;
+  color: var(--success);
+}
+
+.key-create-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.key-create-form textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.key-create-form small {
+  justify-self: end;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.key-warning {
+  padding: 10px 12px;
+  border: 1px solid #f6d58b;
+  border-radius: var(--radius-small);
+  background: #fff9e9;
+  color: #8a5a00 !important;
+  font-weight: 700;
+}
+
+.key-reveal {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.key-value {
+  display: block;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: clamp(14px, 3vw, 18px);
+  font-weight: 800;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .account-status {
@@ -1554,6 +1648,10 @@ a {
   .user-table td {
     display: block;
     width: 100%;
+  }
+
+  .key-table {
+    min-width: 0;
   }
 
   .user-table thead {

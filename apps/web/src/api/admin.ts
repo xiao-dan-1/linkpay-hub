@@ -1,6 +1,7 @@
 import {
   adminUserSchema,
   auditLogListSchema,
+  createUserKeyResponseSchema,
   dashboardSchema,
   rotatedLinkSchema,
   studioSchema,
@@ -47,6 +48,13 @@ export async function setUserEnabled(userId: string, enabled: boolean) {
   }))
 }
 
+export async function createUserKey(note?: string) {
+  return createUserKeyResponseSchema.parse(await apiRequest('/api/v1/admin/user-keys', {
+    method: 'POST',
+    body: note?.trim() ? { note: note.trim() } : {},
+  }))
+}
+
 export async function getStudio(): Promise<Studio> {
   return studioSchema.parse(await apiRequest('/api/v1/admin/studio'))
 }
@@ -55,12 +63,6 @@ export async function updateStudio(name: string): Promise<Studio> {
   return studioSchema.parse(await apiRequest('/api/v1/admin/studio', {
     method: 'PATCH', body: { name },
   }))
-}
-
-export async function rotateRegistration() {
-  return rotatedLinkSchema.parse(await apiRequest('/api/v1/admin/studio/rotate-registration', {
-    method: 'POST',
-  })).url
 }
 
 export async function rotateAccess() {

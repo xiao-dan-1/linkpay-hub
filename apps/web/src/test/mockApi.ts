@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { Task, TaskStatus } from '../domain/models'
+import type { Task, TaskStatus, User } from '../domain/models'
 
 type Principal = {
   id: string
@@ -13,6 +13,7 @@ const now = '2026-08-01T00:00:00.000Z'
 const USER_ID = '11111111-1111-4111-8111-111111111111'
 const STUDIO_ID = '22222222-2222-4222-8222-222222222222'
 const ADMIN_ID = '33333333-3333-4333-8333-333333333333'
+const CREATED_USER_ID = '44444444-4444-4444-8444-444444444444'
 
 function fixtureTask(id: string, status: TaskStatus, index: number): Task {
   return {
@@ -24,7 +25,7 @@ function fixtureTask(id: string, status: TaskStatus, index: number): Task {
     submittedAt: `2026-08-01T0${index}:00:00.000Z`,
     ...(status !== 'queued' ? { processingStartedAt: `2026-08-01T0${index}:05:00.000Z`, version: 1 } : { version: 0 }),
     ...(status === 'success' || status === 'failed' ? { completedAt: `2026-08-01T0${index}:10:00.000Z`, version: 2 } : {}),
-    username: 'demo',
+    userLabel: '客户 A',
   }
 }
 
@@ -33,7 +34,7 @@ export const mockApiState: {
   adminSession: Principal | null
   studioSession: Principal | null
   tasks: Task[]
-  users: Array<{ id: string; username: string; studioId: string; enabled: boolean; createdAt: string }>
+  users: User[]
   studio: { id: string; name: string; enabled: boolean; createdAt: string; updatedAt: string }
 } = {
   userSession: null,
@@ -55,7 +56,14 @@ export function resetMockApiState() {
     fixtureTask('TASK-1004', 'failed', 4),
   ]
   mockApiState.users = [{
-    id: USER_ID, username: 'demo', studioId: STUDIO_ID, enabled: true, createdAt: now,
+    id: USER_ID,
+    maskedKey: 'USR-ABCD-••••-••••-PQRS',
+    note: '客户 A',
+    studioId: STUDIO_ID,
+    enabled: true,
+    createdAt: now,
+    lastUsedAt: now,
+    taskCount: 4,
   }]
   mockApiState.studio = {
     id: STUDIO_ID, name: '演示工作室', enabled: true, createdAt: now, updatedAt: now,
@@ -83,7 +91,7 @@ function apiTask(task: Task) {
     ...(task.processingStartedAt ? { processingStartedAt: task.processingStartedAt } : {}),
     ...(task.completedAt ? { completedAt: task.completedAt } : {}),
     ...(task.feedback ? { feedback: task.feedback } : {}),
-    ...(task.username ? { username: task.username } : {}),
+    ...(task.userLabel ? { userLabel: task.userLabel } : {}),
     version: task.version ?? 0,
   }
 }
@@ -129,7 +137,7 @@ export function installMockApi() {
         mockApiState.tasks.push({
           id: item.id, publicId: item.id, url: item.taskUrl, status: 'queued',
           queueSeq: String(mockApiState.tasks.length + 1), submittedAt: new Date().toISOString(),
-          version: 0, username: 'demo',
+          version: 0, userLabel: '客户 A',
         })
       }
       return json({
@@ -176,14 +184,32 @@ export function installMockApi() {
     if (path === '/api/v1/admin/tasks') {
       const status = url.searchParams.get('status')
       const search = url.searchParams.get('search')?.toLowerCase()
-      const tasks = [...mockApiState.tasks].reverse().filter((task) => (!status || task.status === status) && (!search || task.url.toLowerCase().includes(search) || task.id.toLowerCase().includes(search) || task.username?.toLowerCase().includes(search)))
+      const tasks = [...mockApiState.tasks].reverse().filter((task) => (!status || task.status === status) && (!search || task.url.toLowerCase().includes(search) || task.id.toLowerCase().includes(search) || task.userLabel?.toLowerCase().includes(search)))
       return json({ items: tasks.map(apiTask), page: { hasMore: false, nextCursor: null } })
     }
     if (path.startsWith('/api/v1/admin/tasks/')) {
       const task = mockApiState.tasks.find((item) => item.id === decodeURIComponent(path.split('/').at(-1)!))
       return task ? json(apiTask(task)) : json({ error: { code: 'NOT_FOUND', message: '任务不存在', requestId: 'test-request' } }, 404)
     }
-    if (path === '/api/v1/admin/users') return json({ items: mockApiState.users, page: { hasMore: false, nextCursor: null } })
+    if (path === '/api/v1/admin/users') {
+      const search = url.searchParams.get('search')?.toLowerCase()
+      const users = mockApiState.users.filter((user) => !search || user.note?.toLowerCase().includes(search) || user.maskedKey.toLowerCase().includes(search))
+      return json({ items: users, page: { hasMore: false, nextCursor: null } })
+    }
+    if (path === '/api/v1/admin/user-keys' && method === 'POST') {
+      const user: User = {
+        id: CREATED_USER_ID,
+        maskedKey: 'USR-BCDE-••••-••••-QRST',
+        note: String(body.note ?? '').trim() || null,
+        studioId: STUDIO_ID,
+        enabled: true,
+        createdAt: new Date().toISOString(),
+        lastUsedAt: null,
+        taskCount: 0,
+      }
+      mockApiState.users.unshift(user)
+      return json({ user, accessKey: 'USR-BCDE-FGHJ-KMNP-QRST' }, 201)
+    }
     const userMatch = path.match(/^\/api\/v1\/admin\/users\/([^/]+)$/)
     if (userMatch && method === 'PATCH') {
       const user = mockApiState.users.find((item) => item.id === userMatch[1])!
@@ -192,7 +218,6 @@ export function installMockApi() {
     }
     if (path === '/api/v1/admin/studio' && method === 'GET') return json(mockApiState.studio)
     if (path === '/api/v1/admin/studio' && method === 'PATCH') { mockApiState.studio.name = String(body.name); return json(mockApiState.studio) }
-    if (path === '/api/v1/admin/studio/rotate-registration' && method === 'POST') return json({ url: 'http://localhost/s/new-registration/register' })
     if (path === '/api/v1/admin/studio/rotate-access' && method === 'POST') return json({ url: 'http://localhost/studio/new-access' })
     if (path === '/api/v1/admin/audit-logs') return json({ items: [], page: { hasMore: false, nextCursor: null } })
 

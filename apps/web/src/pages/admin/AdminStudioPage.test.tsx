@@ -25,5 +25,7 @@ describe('AdminStudioPage', () => {
     await userEvent.click(screen.getByRole('button', { name: '保存名称' }))
 
     expect(screen.getByDisplayValue('新的工作室')).toBeInTheDocument()
+    expect(screen.queryByText('用户注册链接')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '轮换注册链接' })).not.toBeInTheDocument()
   })
 })

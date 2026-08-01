@@ -12,7 +12,7 @@ import { useAuth } from '../../auth/AuthContext'
 const navigation = [
   { to: '/admin/dashboard', label: '数据概览', icon: LayoutDashboard },
   { to: '/admin/tasks', label: '全部任务', icon: ClipboardList },
-  { to: '/admin/users', label: '用户管理', icon: Users },
+  { to: '/admin/users', label: '密钥管理', icon: Users },
   { to: '/admin/studio', label: '工作室设置', icon: Building2 },
 ]
 

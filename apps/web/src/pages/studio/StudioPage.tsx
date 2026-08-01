@@ -78,7 +78,7 @@ export function StudioPage() {
   const normalized = search.trim().toLowerCase()
   const filteredTasks = tasks.filter((task) => {
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter
-    const matchesSearch = !normalized || task.url.toLowerCase().includes(normalized) || task.id.toLowerCase().includes(normalized) || task.username?.toLowerCase().includes(normalized)
+    const matchesSearch = !normalized || task.url.toLowerCase().includes(normalized) || task.id.toLowerCase().includes(normalized) || task.userLabel?.toLowerCase().includes(normalized)
     return matchesStatus && matchesSearch
   })
   const counts = {

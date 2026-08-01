@@ -26,10 +26,10 @@ export function TaskList({
   emptyText?: string
 }) {
   const userNames = useMemo(
-    () => new Map(users.map((user) => [user.id, user.username])),
+    () => new Map(users.map((user) => [user.id, user.note || user.maskedKey])),
     [users],
   )
-  const showUsers = users.length > 0 || tasks.some((task) => Boolean(task.username))
+  const showUsers = users.length > 0 || tasks.some((task) => Boolean(task.userLabel))
 
   if (!tasks.length) {
     return (
@@ -62,7 +62,7 @@ export function TaskList({
                   <span>{task.url}</span><ExternalLink size={14} aria-hidden="true" />
                 </a>
               </td>
-              {showUsers ? <td data-label="提交用户">{task.username ?? (task.userId ? userNames.get(task.userId) : undefined) ?? '未知用户'}</td> : null}
+              {showUsers ? <td data-label="提交用户">{task.userLabel ?? (task.userId ? userNames.get(task.userId) : undefined) ?? '未知用户'}</td> : null}
               <td data-label="提交时间">{formatDate(task.submittedAt)}</td>
               <td data-label="状态"><StatusBadge status={task.status} /></td>
               <td className="task-action-cell">

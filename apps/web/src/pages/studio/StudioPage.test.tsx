@@ -42,7 +42,7 @@ describe('StudioPage', () => {
     mockApiState.tasks.push({
       id: 'TASK-NEWEST', publicId: 'TASK-NEWEST', url: 'https://example.com/newest',
       status: 'queued', queueSeq: '5', submittedAt: '2026-08-02T00:00:00.000Z',
-      version: 0, username: 'demo',
+      version: 0, userLabel: '客户 A',
     })
 
     render(

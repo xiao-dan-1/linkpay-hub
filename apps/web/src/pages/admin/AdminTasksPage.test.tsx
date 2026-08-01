@@ -6,7 +6,7 @@ import { AppProviders } from '../../app/AppProviders'
 import { AdminTasksPage } from './AdminTasksPage'
 
 describe('AdminTasksPage', () => {
-  it('filters by status and username or URL text', async () => {
+  it('filters by status and user label or URL text', async () => {
     render(
       <MemoryRouter>
         <AppProviders>

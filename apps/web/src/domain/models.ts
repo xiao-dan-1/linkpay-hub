@@ -10,10 +10,13 @@ export type Studio = {
 
 export type User = {
   id: string
-  username: string
+  maskedKey: string
+  note: string | null
   studioId: string
   enabled: boolean
   createdAt: string
+  lastUsedAt: string | null
+  taskCount: number
 }
 
 export type Task = {
@@ -23,7 +26,7 @@ export type Task = {
   status: TaskStatus
   userId?: string
   studioId?: string
-  username?: string
+  userLabel?: string
   queueSeq?: string
   submittedAt: string
   processingStartedAt?: string

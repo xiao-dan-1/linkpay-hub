@@ -22,7 +22,7 @@ export function toTask(task: ApiTask): Task {
     processingStartedAt: task.processingStartedAt,
     completedAt: task.completedAt,
     feedback: task.feedback,
-    username: task.username,
+    userLabel: task.userLabel,
     version: task.version,
   }
 }
