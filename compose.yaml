@@ -25,6 +25,9 @@ services:
       COOKIE_SECRET: ${COOKIE_SECRET:?set COOKIE_SECRET}
       USER_SESSION_HOURS: ${USER_SESSION_HOURS:-168}
       STUDIO_SESSION_HOURS: ${STUDIO_SESSION_HOURS:-12}
+      LINK_GEN_API_URL: ${LINK_GEN_API_URL:-https://link.gpt007.org}
+      LINK_GEN_USERNAME: ${LINK_GEN_USERNAME:-linkadmin}
+      LINK_GEN_PASSWORD: ${LINK_GEN_PASSWORD:-}
     command: ["npm", "run", "db:migrate:deploy"]
     depends_on:
       postgres:
