@@ -21,7 +21,7 @@ describe('StudioPage', () => {
 
     expect(screen.queryByText('提交用户')).not.toBeInTheDocument()
 
-    const taskCard = (await screen.findByText('https://example.com/queued')).closest('.queue-row')!
+    const taskCard = (await screen.findByText('https://example.com/queued')).closest('.queue-row') as HTMLElement
     await userEvent.click(within(taskCard).getByRole('button', { name: '扫码' }))
     let dialog = await screen.findByRole('dialog', { name: '任务详情' })
     expect(within(dialog).getByText('处理中')).toBeInTheDocument()
@@ -64,7 +64,7 @@ describe('StudioPage', () => {
     expect(screen.getByText('https://example.com/newest')).toBeInTheDocument()
 
     await userEvent.selectOptions(screen.getByLabelText('状态筛选'), 'failed')
-    const failedCard = screen.getByText('https://example.com/failed').closest('.queue-row')!
+    const failedCard = screen.getByText('https://example.com/failed').closest('.queue-row') as HTMLElement
     await userEvent.click(within(failedCard).getByRole('button', { name: '扫码' }))
 
     let dialog = await screen.findByRole('dialog', { name: '任务详情' })

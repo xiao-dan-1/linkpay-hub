@@ -110,78 +110,9 @@ export interface AtCheckResult {
   error?: string
 }
 
-import https from 'node:https'
-import http from 'node:http'
-import { URL } from 'node:url'
-
-function proxyFetch(inputUrl: string, init?: RequestInit): Promise<Response> {
-  const proxyEnv = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.https_proxy || process.env.http_proxy
-  if (!proxyEnv) return globalThis.fetch(inputUrl, init)
-
-  const target = new URL(inputUrl)
-  const proxy = new URL(proxyEnv)
-  const isHttps = target.protocol === 'https:'
-
-  return new Promise((resolve, reject) => {
-    const req = http.request({
-      host: proxy.hostname,
-      port: proxy.port || 8080,
-      method: 'CONNECT',
-      path: `${target.hostname}:${target.port || (isHttps ? 443 : 80)}`,
-      headers: proxy.username ? {
-        'proxy-authorization': 'Basic ' + Buffer.from(`${proxy.username}:${proxy.password || ''}`).toString('base64'),
-      } : {},
-    })
-
-    req.on('connect', (_res, socket) => {
-      const agent = isHttps
-        ? new https.Agent({ socket, rejectUnauthorized: false })
-        : new http.Agent({ socket })
-
-      const headers: Record<string, string> = {
-        'host': target.hostname,
-        ...Object.fromEntries(new Headers(init?.headers).entries()),
-      }
-
-      const rawReq = (isHttps ? https : http).request({
-        method: init?.method || 'GET',
-        hostname: target.hostname,
-        port: target.port || (isHttps ? 443 : 80),
-        path: target.pathname + target.search,
-        agent,
-        headers,
-      })
-
-      rawReq.on('response', (rawRes) => {
-        const chunks: Buffer[] = []
-        rawRes.on('data', (chunk: Buffer) => chunks.push(chunk))
-        rawRes.on('end', () => {
-          const body = Buffer.concat(chunks)
-          resolve(new Response(
-            body.length ? body : null,
-            {
-              status: rawRes.statusCode,
-              statusText: rawRes.statusMessage,
-              headers: Object.fromEntries(
-                Object.entries(rawRes.headers).filter(([, v]) => v !== undefined).map(([k, v]) => [k, Array.isArray(v) ? v.join(', ') : String(v)]),
-              ),
-            },
-          ))
-        })
-      })
-      rawReq.on('error', reject)
-      if (init?.body) rawReq.end(init.body as string)
-      else rawReq.end()
-    })
-
-    req.on('error', reject)
-    req.end()
-  })
-}
-
 async function queryChatGptApi(token: string): Promise<{ accounts: Record<string, unknown>; subscription: Record<string, unknown> } | null> {
   try {
-    const accountsRes = await proxyFetch(`${ORIGIN}/backend-api/accounts/check/v4-2023-04-27`, {
+    const accountsRes = await fetch(`${ORIGIN}/backend-api/accounts/check/v4-2023-04-27`, {
       method: 'GET',
       headers: { ...HEADERS, authorization: `Bearer ${token}` },
     })
@@ -196,7 +127,7 @@ async function queryChatGptApi(token: string): Promise<{ accounts: Record<string
     let subscriptionData: Record<string, unknown> = {}
     if (accountId) {
       try {
-        const subRes = await proxyFetch(`${ORIGIN}/backend-api/subscriptions?account_id=${encodeURIComponent(String(accountId))}`, {
+        const subRes = await fetch(`${ORIGIN}/backend-api/subscriptions?account_id=${encodeURIComponent(String(accountId))}`, {
           method: 'GET',
           headers: { ...HEADERS, authorization: `Bearer ${token}` },
         })

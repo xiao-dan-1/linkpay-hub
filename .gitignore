@@ -11,3 +11,4 @@ backups/
 *.dump
 *.dump.gz
 .worktrees/
+.claude/
