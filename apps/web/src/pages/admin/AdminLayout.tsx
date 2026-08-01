@@ -25,6 +25,7 @@ export function AdminLayout() {
       <aside className="admin-sidebar">
         <div className="admin-brand"><span className="admin-brand-icon"><ShieldCheck size={22} /></span><div><strong>任务工作台</strong><small>管理控制台</small></div></div>
         <nav className="admin-nav" aria-label="管理员导航">
+          <a href="/user/workbench" className="admin-nav-external">用户工作台</a>
           {navigation.map(({ to, label, icon: Icon }) => <NavLink key={to} to={to} className={({ isActive }) => isActive ? 'active' : ''}><Icon size={18} /><span>{label}</span></NavLink>)}
         </nav>
         <div className="admin-profile"><div><span>当前管理员</span><strong>{admin?.username ?? 'admin'}</strong></div><button className="icon-button" aria-label="退出管理员登录" onClick={() => { void logoutAdmin().then(() => navigate('/admin/login')) }}><LogOut size={18} /></button></div>
