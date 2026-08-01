@@ -1,4 +1,4 @@
-import { Activity, Clock, Copy, Inbox, ScanLine } from 'lucide-react'
+import { Activity, Clock, Copy, Inbox, Pen, ScanLine } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import type { AtCheckResult } from '../api/at'
 import { checkAt } from '../api/at'
@@ -25,12 +25,13 @@ function copyToClipboard(text: string, label: string, setMsg: (m: string) => voi
 type AtModalData = { title: string; result: AtCheckResult }
 
 export function TaskList({
-  tasks, users, onSelect,
+  tasks, users, onSelect, onEdit,
   emptyText = '暂时没有符合条件的任务',
 }: {
   tasks: Task[]
   users: User[]
   onSelect: (task: Task) => void
+  onEdit?: (task: Task) => void
   emptyText?: string
 }) {
   const userNames = useMemo(
@@ -104,6 +105,11 @@ export function TaskList({
 
               {/* actions */}
               <div className="queue-actions">
+                {onEdit && task.status === 'queued' ? (
+                  <button className="icon-button" aria-label="编辑" title="编辑" onClick={() => onEdit(task)}>
+                    <Pen size={16} />
+                  </button>
+                ) : null}
                 <button className="icon-button" aria-label="扫码" title="扫码处理" onClick={() => onSelect(task)}>
                   <ScanLine size={16} />
                 </button>

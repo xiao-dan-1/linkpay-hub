@@ -1,4 +1,4 @@
-import { Activity, ExternalLink, Pen, X } from 'lucide-react'
+import { Activity, ExternalLink, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { AtCheckResult } from '../api/at'
@@ -13,14 +13,8 @@ import { formatDate as formatTime } from './TaskList'
 type AtModalData = { title: string; result: AtCheckResult }
 
 export function TaskDetails({
-  task, user, actions, onEdit, onClose,
-}: {
-  task: Task | null
-  user?: User
-  actions?: ReactNode
-  onEdit?: (task: Task) => void
-  onClose: () => void
-}) {
+  task, user, actions, onClose,
+}: { task: Task | null; user?: User; actions?: ReactNode; onClose: () => void }) {
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
   const [toastMsg, setToastMsg] = useState('')
@@ -127,16 +121,7 @@ export function TaskDetails({
 
         {toastMsg ? <div className="toast-region"><div className="toast" role="status">{toastMsg}</div></div> : null}
         <AtResultModal data={atModal} onClose={() => setAtModal(null)} />
-        {(actions || onEdit) ? (
-          <footer className="modal-actions" style={{ padding: '12px 20px', gap: 8 }}>
-            {onEdit && task.status === 'queued' ? (
-              <button className="button compact secondary" onClick={() => { onClose(); onEdit(task) }}>
-                <Pen size={14} />编辑
-              </button>
-            ) : null}
-            {actions}
-          </footer>
-        ) : null}
+        {actions ? <footer className="modal-actions" style={{ padding: '12px 20px' }}>{actions}</footer> : null}
       </div>
     </div>
   )

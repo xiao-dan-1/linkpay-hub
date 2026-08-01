@@ -231,10 +231,10 @@ export function UserWorkbenchPage() {
               <label><span className="sr-only">状态筛选</span><select aria-label="状态筛选" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="all">全部状态</option><option value="queued">排队中</option><option value="processing">处理中</option><option value="success">成功</option><option value="failed">失败</option></select></label>
             </div>
           </div>
-          {loading ? <div className="empty-state"><p>正在加载任务…</p></div> : <TaskList tasks={filteredTasks} users={[]} onSelect={setSelectedTask} />}
+          {loading ? <div className="empty-state"><p>正在加载任务…</p></div> : <TaskList tasks={filteredTasks} users={[]} onSelect={setSelectedTask} onEdit={startEdit} />}
         </section>
       </AppShell>
-      <TaskDetails task={selectedTask} onClose={() => setSelectedTask(null)} onEdit={startEdit} />
+      <TaskDetails task={selectedTask} onClose={() => setSelectedTask(null)} />
 
       <ModalFrame open={editingTask !== null} title="编辑任务" onDismiss={() => setEditingTask(null)}>
         <h2>编辑任务</h2>
