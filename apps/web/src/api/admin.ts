@@ -95,14 +95,14 @@ export async function getStudio(): Promise<Studio> {
   return studioSchema.parse(await apiRequest('/api/v1/admin/studio'))
 }
 
-export async function updateStudio(name: string): Promise<Studio> {
-  return studioSchema.parse(await apiRequest('/api/v1/admin/studio', {
+export async function updateStudio(id: string, name: string): Promise<Studio> {
+  return studioSchema.parse(await apiRequest(`/api/v1/admin/studios/${encodeURIComponent(id)}`, {
     method: 'PATCH', body: { name },
   }))
 }
 
-export async function rotateAccess() {
-  return rotatedLinkSchema.parse(await apiRequest('/api/v1/admin/studio/rotate-access', {
+export async function rotateAccess(id: string) {
+  return rotatedLinkSchema.parse(await apiRequest(`/api/v1/admin/studios/${encodeURIComponent(id)}/rotate-access`, {
     method: 'POST',
   })).url
 }

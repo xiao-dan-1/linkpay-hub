@@ -416,31 +416,31 @@ export const adminService = {
     })
   },
 
-  async updateStudio(adminId: string, name: string) {
+  async updateStudio(adminId: string, studioId: string, name: string) {
     return prisma.$transaction(async (transaction) => {
-      const studio = await transaction.studio.findFirst()
+      const studio = await transaction.studio.findUnique({ where: { id: studioId } })
       if (!studio) throw notFoundError()
       const updated = await transaction.studio.update({
-        where: { id: studio.id }, data: { name },
+        where: { id: studioId }, data: { name },
       })
       await writeAudit(transaction, {
         actorId: adminId,
         action: 'studio.updated',
         targetType: 'studio',
-        targetId: studio.id,
+        targetId: studioId,
         metadata: { name },
       })
       return serializeStudio(updated)
     })
   },
 
-  async rotateAccess(adminId: string) {
+  async rotateAccess(adminId: string, studioId: string) {
     const rawToken = createOpaqueToken()
     await prisma.$transaction(async (transaction) => {
-      const studio = await transaction.studio.findFirst()
+      const studio = await transaction.studio.findUnique({ where: { id: studioId } })
       if (!studio) throw notFoundError()
       await transaction.studio.update({
-        where: { id: studio.id },
+        where: { id: studioId },
         data: {
           accessTokenHash: hashToken(rawToken),
           accessTokenCipher: encryptAccessKey(rawToken),
@@ -451,7 +451,7 @@ export const adminService = {
         actorId: adminId,
         action: 'studio.access_rotated',
         targetType: 'studio',
-        targetId: studio.id,
+        targetId: studioId,
       })
     })
     return { url: `${config.APP_ORIGIN}/studio/${rawToken}` }

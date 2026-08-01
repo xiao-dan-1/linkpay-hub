@@ -1,12 +1,11 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { AppProviders } from '../../app/AppProviders'
 import { AdminStudioPage } from './AdminStudioPage'
 
 describe('AdminStudioPage', () => {
-  it('updates the studio name', async () => {
+  it('shows the studio list with create form', async () => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -19,13 +18,8 @@ describe('AdminStudioPage', () => {
       </MemoryRouter>,
     )
 
-    const input = await screen.findByLabelText('工作室名称')
-    await userEvent.clear(input)
-    await userEvent.type(input, '新的工作室')
-    await userEvent.click(screen.getByRole('button', { name: '保存名称' }))
-
-    expect(screen.getByDisplayValue('新的工作室')).toBeInTheDocument()
-    expect(screen.queryByText('用户注册链接')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: '轮换注册链接' })).not.toBeInTheDocument()
+    expect(await screen.findByText('演示工作室')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('工作室名称')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /创建/ })).toBeInTheDocument()
   })
 })

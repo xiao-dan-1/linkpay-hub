@@ -124,19 +124,23 @@ export async function registerAdminRoutes(app: FastifyInstance) {
   )
 
   app.patch(
-    '/api/v1/admin/studio',
+    '/api/v1/admin/studios/:studioId',
     { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
     async (request) => {
       const adminId = adminPrincipal(request.principal)
+      const { studioId } = request.params as { studioId: string }
       const body = updateStudioSchema.parse(request.body)
-      return adminService.updateStudio(adminId, body.name)
+      return adminService.updateStudio(adminId, studioId, body.name)
     },
   )
 
   app.post(
-    '/api/v1/admin/studio/rotate-access',
+    '/api/v1/admin/studios/:studioId/rotate-access',
     { onRequest: app.csrfProtection, preHandler: app.requireAdmin },
-    async (request) => adminService.rotateAccess(adminPrincipal(request.principal)),
+    async (request) => {
+      const { studioId } = request.params as { studioId: string }
+      return adminService.rotateAccess(adminPrincipal(request.principal), studioId)
+    },
   )
 
   app.get('/api/v1/admin/audit-logs', { preHandler: app.requireAdmin }, async (request) => {

@@ -257,9 +257,16 @@ export function installMockApi() {
       mockApiState.users.splice(index, 1)
       return json(undefined, 204)
     }
+    if (path === '/api/v1/admin/studios' && method === 'GET') return json([mockApiState.studio])
     if (path === '/api/v1/admin/studio' && method === 'GET') return json(mockApiState.studio)
-    if (path === '/api/v1/admin/studio' && method === 'PATCH') { mockApiState.studio.name = String(body.name); return json(mockApiState.studio) }
-    if (path === '/api/v1/admin/studio/rotate-access' && method === 'POST') { mockApiState.studio.entryUrl = 'http://localhost/studio/new-access'; return json({ url: 'http://localhost/studio/new-access' }) }
+    if (path === '/api/v1/admin/studio' && method === 'POST') {
+      const s = { id: 'studio-new', name: String(body.name), enabled: true, createdAt: now, updatedAt: now, entryUrl: 'http://localhost/studio/new-token' }
+      return json({ studio: s, accessToken: 'new-token' }, 201)
+    }
+    if (path.startsWith('/api/v1/admin/studios/') && path.endsWith('/rotate-access') && method === 'POST') {
+      mockApiState.studio.entryUrl = 'http://localhost/studio/new-access'; return json({ url: 'http://localhost/studio/new-access' })
+    }
+    if (path.startsWith('/api/v1/admin/studios/') && method === 'PATCH') { mockApiState.studio.name = String(body.name); return json(mockApiState.studio) }
     if (path === '/api/v1/admin/audit-logs') return json({ items: [], page: { hasMore: false, nextCursor: null } })
 
     return json({ error: { code: 'NOT_FOUND', message: `No mock for ${method} ${path}`, requestId: 'test-request' } }, 404)

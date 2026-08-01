@@ -331,14 +331,14 @@ describe('administrator API', () => {
     expect(current.json().entryUrl).toBeNull()
 
     const renamed = await app.inject({
-      method: 'PATCH', url: '/api/v1/admin/studio',
+      method: 'PATCH', url: `/api/v1/admin/studios/${studioId}`,
       headers: writeHeaders(), payload: { name: '正式工作室' },
     })
     expect(renamed.statusCode).toBe(200)
     expect(renamed.json().name).toBe('正式工作室')
 
     const access = await app.inject({
-      method: 'POST', url: '/api/v1/admin/studio/rotate-access', headers: writeHeaders(),
+      method: 'POST', url: `/api/v1/admin/studios/${studioId}/rotate-access`, headers: writeHeaders(),
     })
     expect(access.statusCode).toBe(200)
     expect(access.json().url).toMatch(/^http:\/\/127\.0\.0\.1:5173\/studio\/.+$/)
