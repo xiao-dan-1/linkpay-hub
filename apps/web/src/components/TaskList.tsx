@@ -105,7 +105,7 @@ export function TaskList({
 
               {/* actions */}
               <div className="queue-actions">
-                {onEdit && task.status === 'queued' ? (
+                {onEdit && (task.status === 'queued' || task.status === 'failed') ? (
                   <button className="icon-button" aria-label="编辑" title="编辑" onClick={() => onEdit(task)}>
                     <Pen size={16} />
                   </button>

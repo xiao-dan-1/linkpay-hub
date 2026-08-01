@@ -195,20 +195,25 @@ export const taskService = {
       })
       if (!task) throw notFoundError()
 
-      if (task.status !== 'queued') {
-        throw new AppError(409, 'TASK_NOT_EDITABLE', '只有排队中的任务可以编辑')
+      if (task.status !== 'queued' && task.status !== 'failed') {
+        throw new AppError(409, 'TASK_NOT_EDITABLE', '只有排队中或失败的任务可以编辑')
       }
 
+      const isFailed = task.status === 'failed'
       const updated = await transaction.task.updateMany({
         where: {
           id: task.id,
           userId,
-          status: 'queued',
+          status: isFailed ? 'failed' : 'queued',
           version: input.version,
         },
         data: {
           url: input.url,
           at: input.at ?? null,
+          status: 'queued',
+          processingStartedAt: null,
+          completedAt: null,
+          feedback: null,
           version: { increment: 1 },
         },
       })

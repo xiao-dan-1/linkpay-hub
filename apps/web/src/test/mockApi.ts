@@ -167,9 +167,13 @@ export function installMockApi() {
       if (index < 0) return json({ error: { code: 'NOT_FOUND', message: '任务不存在', requestId: 'test-request' } }, 404)
       if (method === 'PATCH') {
         const task = mockApiState.tasks[index]
-        if (task.status !== 'queued') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中的任务可以编辑', requestId: 'test-request' } }, 409)
+        if (task.status !== 'queued' && task.status !== 'failed') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中或失败的任务可以编辑', requestId: 'test-request' } }, 409)
         task.url = String(body.url)
         task.at = typeof body.at === 'string' ? body.at : undefined
+        task.status = 'queued'
+        task.processingStartedAt = undefined
+        task.completedAt = undefined
+        task.feedback = undefined
         task.version = (task.version ?? 0) + 1
         return json(apiTask(task))
       }
@@ -241,9 +245,13 @@ export function installMockApi() {
       if (index < 0) return json({ error: { code: 'NOT_FOUND', message: '任务不存在', requestId: 'test-request' } }, 404)
       if (method === 'PATCH') {
         const task = mockApiState.tasks[index]
-        if (task.status !== 'queued') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中的任务可以编辑', requestId: 'test-request' } }, 409)
+        if (task.status !== 'queued' && task.status !== 'failed') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中或失败的任务可以编辑', requestId: 'test-request' } }, 409)
         task.url = String(body.url)
         task.at = typeof body.at === 'string' ? body.at : undefined
+        task.status = 'queued'
+        task.processingStartedAt = undefined
+        task.completedAt = undefined
+        task.feedback = undefined
         task.version = (task.version ?? 0) + 1
         return json(apiTask(task))
       }
