@@ -41,26 +41,9 @@ export async function checkAt(at: string): Promise<AtCheckResult> {
   })
 }
 
-export interface Stage {
-  key: string
-  label: string
-  status: 'done' | 'running' | 'pending'
-}
-
-export interface JobCheckResult {
-  status: 'running' | 'done' | 'failed'
-  stages?: Stage[]
-  pay_url?: string
-  error?: string
-}
-
-export async function startLinkJob(at: string): Promise<{ ok: boolean; jobId?: string; error?: string }> {
+export async function generatePayLink(at: string): Promise<{ ok: boolean; pay_url?: string; error?: string }> {
   return apiRequest('/api/v1/user/at/generate-pay-link', {
     method: 'POST',
     body: { at },
   })
-}
-
-export async function checkLinkJob(jobId: string): Promise<JobCheckResult> {
-  return apiRequest(`/api/v1/user/at/generate-pay-link/${encodeURIComponent(jobId)}`)
 }

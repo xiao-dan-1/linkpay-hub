@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { checkLinkJob, startLinkJob, type Stage } from '../../api/at'
+import { generatePayLink } from '../../api/at'
 import { deleteTask, listUserTasks, submitTasks, updateTask } from '../../api/tasks'
 import { useAuth } from '../../auth/AuthContext'
 import { AppShell } from '../../components/AppShell'
@@ -48,7 +48,6 @@ export function UserWorkbenchPage() {
   const [saving, setSaving] = useState(false)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [generating, setGenerating] = useState(false)
-  const [genStages, setGenStages] = useState<Stage[] | null>(null)
   const [creatingLink, setCreatingLink] = useState(false)
   const [linkProgress, setLinkProgress] = useState<{ current: number; total: number } | null>(null)
 
@@ -209,17 +208,8 @@ export function UserWorkbenchPage() {
                   setLinkProgress({ current: 0, total: atLines.length })
                   const results: string[] = []
                   for (let i = 0; i < atLines.length; i++) {
-                    const created = await startLinkJob(atLines[i].trim())
-                    if (!created.ok || !created.jobId) continue
-                    for (let p = 0; p < 30; p++) {
-                      await new Promise(r => setTimeout(r, 2000))
-                      const job = await checkLinkJob(created.jobId)
-                      if (job.status === 'done' && job.pay_url) {
-                        results.push(job.pay_url)
-                        break
-                      }
-                      if (job.status === 'failed') break
-                    }
+                    const res = await generatePayLink(atLines[i].trim())
+                    if (res.ok && res.pay_url) results.push(res.pay_url)
                     setLinkProgress({ current: i + 1, total: atLines.length })
                   }
                   if (results.length > 0) {
@@ -298,27 +288,10 @@ export function UserWorkbenchPage() {
             支付链接
             <button className="button compact ghost" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', height: 26, visibility: editAt.trim() ? 'visible' : 'hidden' }} disabled={generating || !editAt.trim()} onClick={async () => {
                 setGenerating(true)
-                setGenStages(null)
                 try {
-                  const created = await startLinkJob(editAt.trim())
-                  if (!created.ok || !created.jobId) {
-                    setFeedback(created.error || '创建任务失败')
-                    setGenerating(false)
-                    return
-                  }
-                  for (let i = 0; i < 30; i++) {
-                    await new Promise(r => setTimeout(r, 2000))
-                    const job = await checkLinkJob(created.jobId)
-                    if (job.stages) setGenStages(job.stages)
-                    if (job.status === 'done' && job.pay_url) {
-                      setEditUrl(job.pay_url)
-                      break
-                    }
-                    if (job.status === 'failed') {
-                      setFeedback(job.error || '链接生成失败')
-                      break
-                    }
-                  }
+                  const res = await generatePayLink(editAt.trim())
+                  if (res.ok && res.pay_url) setEditUrl(res.pay_url)
+                  else setFeedback(res.error || '生成失败')
                 } catch (e) {
                   setFeedback(e instanceof Error ? e.message : '生成失败')
                 } finally { setGenerating(false) }
@@ -326,17 +299,6 @@ export function UserWorkbenchPage() {
                 <Link size={11} />{generating ? '生成中…' : '生成链接'}
               </button>
           </label>
-          {genStages && generating ? (
-            <div style={{ margin: '6px 0', fontSize: 11, color: 'var(--text-muted)' }}>
-              {genStages.map(s => (
-                <span key={s.key} style={{ marginRight: 2 }}>
-                  <span style={{ color: s.status === 'done' ? 'var(--success)' : s.status === 'running' ? 'var(--primary)' : 'var(--text-subtle)' }}>●</span>
-                  {' '}{s.label}
-                  {s.status === 'running' ? '…' : ''}
-                </span>
-              )).reduce((prev, curr, i) => prev === null ? curr : <>{prev} <span style={{color:'var(--border)'}}>→</span> {curr}</> as any, null)}
-            </div>
-          ) : null}
           <input id="edit-url" value={editUrl} onChange={(event) => setEditUrl(event.target.value)} maxLength={8192} placeholder="https://pay.example.com/…" autoComplete="off" />
           <small>{editUrl.length}/8192</small>
         </div>
