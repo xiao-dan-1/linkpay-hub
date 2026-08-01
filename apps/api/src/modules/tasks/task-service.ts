@@ -211,6 +211,7 @@ export const taskService = {
           url: input.url,
           at: input.at ?? null,
           status: 'queued',
+          submittedAt: new Date(),
           processingStartedAt: null,
           completedAt: null,
           feedback: null,

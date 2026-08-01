@@ -171,6 +171,7 @@ export function installMockApi() {
         task.url = String(body.url)
         task.at = typeof body.at === 'string' ? body.at : undefined
         task.status = 'queued'
+        task.submittedAt = new Date().toISOString()
         task.processingStartedAt = undefined
         task.completedAt = undefined
         task.feedback = undefined
@@ -249,6 +250,7 @@ export function installMockApi() {
         task.url = String(body.url)
         task.at = typeof body.at === 'string' ? body.at : undefined
         task.status = 'queued'
+        task.submittedAt = new Date().toISOString()
         task.processingStartedAt = undefined
         task.completedAt = undefined
         task.feedback = undefined
