@@ -38,7 +38,7 @@ describe('TaskDetails', () => {
       />,
     )
 
-    expect(screen.getByText('处理时限倒计时')).toBeInTheDocument()
+    expect(screen.getByText('处理时限')).toBeInTheDocument()
     expect(screen.getByTitle('从提交起 15 分钟')).toBeInTheDocument()
   })
 })

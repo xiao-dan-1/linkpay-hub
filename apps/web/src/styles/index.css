@@ -905,6 +905,40 @@ a {
   border-color: var(--primary);
 }
 
+/* task detail link + qr row */
+.td-link-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+
+.td-link-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.td-url {
+  display: block;
+  color: var(--primary-dark);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-weight: 600;
+  word-break: break-all;
+  line-height: 1.6;
+}
+
+.td-url:hover { color: var(--primary); }
+
+.td-qr {
+  flex: 0 0 120px;
+  width: 120px;
+  height: 120px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
 /* ---------- AT detail modal ---------- */
 
 .at-detail-modal {
