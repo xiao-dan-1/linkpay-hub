@@ -22,8 +22,8 @@ describe('AdminStudioPage', () => {
     expect(await screen.findByText('演示工作室')).toBeInTheDocument()
     expect(screen.getByText('1 个工作室')).toBeInTheDocument()
 
-    // Click to show create form
+    // Click to open create modal
     await userEvent.click(screen.getByRole('button', { name: '创建工作室' }))
-    expect(screen.getByPlaceholderText('工作室名称')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('输入工作室名称')).toBeInTheDocument()
   })
 })

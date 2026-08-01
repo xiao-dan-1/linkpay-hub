@@ -9,7 +9,7 @@ export function AdminStudioPage() {
   const [studios, setStudios] = useState<Studio[]>([])
   const [editId, setEditId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
-  const [showCreate, setShowCreate] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [userCount, setUserCount] = useState(0)
   const [taskCount, setTaskCount] = useState(0)
@@ -53,6 +53,7 @@ export function AdminStudioPage() {
     try {
       const { studio: s, accessToken } = await createStudio(newName.trim())
       setStudios(prev => [...prev, s])
+      setCreateOpen(false)
       setNewName('')
       await navigator.clipboard.writeText(`${window.location.origin}/studio/${accessToken}`)
       setFeedback('已创建，入口链接已复制到剪贴板')
@@ -66,18 +67,27 @@ export function AdminStudioPage() {
         <div><p className="eyebrow">STUDIO SETTINGS</p><h1>工作室管理</h1><p>管理所有工作室及其访问入口。</p></div>
         <div className="header-actions">
           <strong className="result-count">{studios.length} 个工作室</strong>
-          <button className="button" onClick={() => { setShowCreate(true); setNewName('') }}><Plus size={17} />创建工作室</button>
+          <button className="button" onClick={() => { setCreateOpen(true); setNewName('') }}><Plus size={17} />创建工作室</button>
         </div>
       </header>
 
-      {/* 新增行 */}
-      {showCreate ? (
-        <section className="panel" style={{ padding: '14px 18px', marginBottom: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
-          <span style={{ fontWeight: 700, whiteSpace: 'nowrap', fontSize: 13 }}>新增工作室</span>
-          <input style={{ flex: 1, minHeight: 42, padding: '0 12px', border: '1px solid var(--border-strong)', borderRadius: 10, outline: 0, fontSize: 14, fontFamily: 'inherit' }} value={newName} onChange={e => setNewName(e.target.value)} placeholder="工作室名称" onKeyDown={e => { if (e.key === 'Enter') void doCreate() }} autoFocus />
-          <button className="button" disabled={creating || !newName.trim()} onClick={() => void doCreate()}><Plus size={17} />{creating ? '…' : '创建'}</button>
-          <button className="button ghost compact" onClick={() => setShowCreate(false)}>取消</button>
-        </section>
+      {/* 创建工作室弹窗 */}
+      {createOpen ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setCreateOpen(false) }}>
+          <div className="modal key-modal" role="dialog" aria-modal="true" aria-label="创建工作室">
+            <div className="key-modal-icon"><Building2 size={22} /></div>
+            <h2>创建工作室</h2>
+            <p>新工作室将生成唯一访问入口。</p>
+            <div className="key-create-form">
+              <label htmlFor="new-studio-name">工作室名称</label>
+              <input id="new-studio-name" data-autofocus value={newName} onChange={e => setNewName(e.target.value)} maxLength={120} placeholder="输入工作室名称" autoComplete="off" onKeyDown={e => { if (e.key === 'Enter') void doCreate() }} />
+            </div>
+            <div className="modal-actions">
+              <button className="button ghost" onClick={() => setCreateOpen(false)}>取消</button>
+              <button className="button" disabled={creating || !newName.trim()} onClick={() => void doCreate()}><Plus size={17} />{creating ? '创建中…' : '创建'}</button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       <section className="panel user-management-panel" style={{ padding: 18 }}>
