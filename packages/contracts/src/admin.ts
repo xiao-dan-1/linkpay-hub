@@ -46,10 +46,16 @@ export const studioSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   entryUrl: z.string().nullable(),
+  linkGenApiUrl: z.string().nullable(),
+  linkGenUsername: z.string().nullable(),
+  linkGenPassword: z.string().nullable(),
 })
 
 export const updateStudioSchema = z.object({
   name: z.string().trim().min(1).max(120),
+  linkGenApiUrl: z.string().trim().optional(),
+  linkGenUsername: z.string().trim().optional(),
+  linkGenPassword: z.string().trim().optional(),
 })
 
 export const rotatedLinkSchema = z.object({

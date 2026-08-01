@@ -116,9 +116,12 @@ export async function getStudio(): Promise<Studio> {
   return studioSchema.parse(await apiRequest('/api/v1/admin/studio'))
 }
 
-export async function updateStudio(id: string, name: string): Promise<Studio> {
+export async function updateStudio(
+  id: string,
+  data: { name: string; linkGenApiUrl?: string; linkGenUsername?: string; linkGenPassword?: string },
+): Promise<Studio> {
   return studioSchema.parse(await apiRequest(`/api/v1/admin/studios/${encodeURIComponent(id)}`, {
-    method: 'PATCH', body: { name },
+    method: 'PATCH', body: data,
   }))
 }
 

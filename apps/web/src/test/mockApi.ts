@@ -36,14 +36,14 @@ export const mockApiState: {
   studioSession: Principal | null
   tasks: Task[]
   users: User[]
-  studio: { id: string; name: string; enabled: boolean; createdAt: string; updatedAt: string; entryUrl: string | null }
+  studio: { id: string; name: string; enabled: boolean; createdAt: string; updatedAt: string; entryUrl: string | null; linkGenApiUrl: string | null; linkGenUsername: string | null; linkGenPassword: string | null }
 } = {
   userSession: null,
   adminSession: null,
   studioSession: null,
   tasks: [],
   users: [],
-  studio: { id: '', name: '', enabled: true, createdAt: now, updatedAt: now, entryUrl: null },
+  studio: { id: '', name: '', enabled: true, createdAt: now, updatedAt: now, entryUrl: null, linkGenApiUrl: null, linkGenUsername: null, linkGenPassword: null },
 }
 
 export function resetMockApiState() {
@@ -69,6 +69,7 @@ export function resetMockApiState() {
   mockApiState.studio = {
     id: STUDIO_ID, name: '演示工作室', enabled: true, createdAt: now, updatedAt: now,
     entryUrl: 'http://localhost/studio/studio-demo-8f3c2a',
+    linkGenApiUrl: null, linkGenUsername: null, linkGenPassword: null,
   }
 }
 
@@ -312,7 +313,7 @@ export function installMockApi() {
     if (path === '/api/v1/admin/studios' && method === 'GET') return json([mockApiState.studio])
     if (path === '/api/v1/admin/studio' && method === 'GET') return json(mockApiState.studio)
     if (path === '/api/v1/admin/studio' && method === 'POST') {
-      const s = { id: 'studio-new', name: String(body.name), enabled: true, createdAt: now, updatedAt: now, entryUrl: 'http://localhost/studio/new-token' }
+      const s = { id: 'studio-new', name: String(body.name), enabled: true, createdAt: now, updatedAt: now, entryUrl: 'http://localhost/studio/new-token', linkGenApiUrl: null, linkGenUsername: null, linkGenPassword: null }
       return json({ studio: s, accessToken: 'new-token' }, 201)
     }
     if (path.startsWith('/api/v1/admin/studios/') && path.endsWith('/rotate-access') && method === 'POST') {

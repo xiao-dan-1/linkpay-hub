@@ -65,6 +65,9 @@ function serializeStudio(studio: {
   createdAt: Date
   updatedAt: Date
   accessTokenCipher: string | null
+  linkGenApiUrl: string | null
+  linkGenUsername: string | null
+  linkGenPassword: string | null
 }) {
   return {
     id: studio.id,
@@ -75,6 +78,9 @@ function serializeStudio(studio: {
     entryUrl: studio.accessTokenCipher
       ? `${config.APP_ORIGIN}/studio/${decryptAccessKey(studio.accessTokenCipher)}`
       : null,
+    linkGenApiUrl: studio.linkGenApiUrl,
+    linkGenUsername: studio.linkGenUsername,
+    linkGenPassword: studio.linkGenPassword ? '••••••••' : null,
   }
 }
 
@@ -488,12 +494,21 @@ export const adminService = {
     })
   },
 
-  async updateStudio(adminId: string, studioId: string, name: string) {
+  async updateStudio(
+    adminId: string,
+    studioId: string,
+    name: string,
+    opts?: { linkGenApiUrl?: string; linkGenUsername?: string; linkGenPassword?: string },
+  ) {
     return prisma.$transaction(async (transaction) => {
       const studio = await transaction.studio.findUnique({ where: { id: studioId } })
       if (!studio) throw notFoundError()
+      const data: Record<string, unknown> = { name }
+      if (opts?.linkGenApiUrl !== undefined) data.linkGenApiUrl = opts.linkGenApiUrl || null
+      if (opts?.linkGenUsername !== undefined) data.linkGenUsername = opts.linkGenUsername || null
+      if (opts?.linkGenPassword !== undefined) data.linkGenPassword = opts.linkGenPassword || null
       const updated = await transaction.studio.update({
-        where: { id: studioId }, data: { name },
+        where: { id: studioId }, data,
       })
       await writeAudit(transaction, {
         actorId: adminId,

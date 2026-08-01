@@ -1,13 +1,20 @@
+import { prisma } from '../../db.js'
 import { config } from '../../config.js'
 
-const BASIC = Buffer.from(
-  `${config.LINK_GEN_USERNAME}:${config.LINK_GEN_PASSWORD}`,
-).toString('base64')
-
-const HEADERS = {
-  'Content-Type': 'application/json',
-  'Authorization': `Basic ${BASIC}`,
+async function getLinkGenConfig() {
+  const studio = await prisma.studio.findFirst()
+  return {
+    apiUrl: studio?.linkGenApiUrl || config.LINK_GEN_API_URL,
+    username: studio?.linkGenUsername || config.LINK_GEN_USERNAME,
+    password: studio?.linkGenPassword || config.LINK_GEN_PASSWORD,
+  }
 }
+
+function basicAuth(username: string, password: string) {
+  return Buffer.from(`${username}:${password}`).toString('base64')
+}
+
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -16,15 +23,21 @@ function sleep(ms: number) {
 export async function generateKakaoPayLink(
   accessToken: string,
 ): Promise<{ ok: boolean; pay_url?: string; error?: string }> {
-  if (!config.LINK_GEN_PASSWORD) {
-    return { ok: false, error: '链接生成服务未配置凭据' }
+  const cfg = await getLinkGenConfig()
+  if (!cfg.password) {
+    return { ok: false, error: '链接生成服务未配置凭据，请在管理员设置中配置' }
   }
+  const authHeaders = {
+    ...JSON_HEADERS,
+    'Authorization': `Basic ${basicAuth(cfg.username, cfg.password)}`,
+  }
+
   // 1. Create kakao_kr job
   let res: Response
   try {
-    res = await fetch(`${config.LINK_GEN_API_URL}/api/jobs`, {
+    res = await fetch(`${cfg.apiUrl}/api/jobs`, {
       method: 'POST',
-      headers: HEADERS,
+      headers: authHeaders,
       body: JSON.stringify({
         items: [{ access_token: accessToken, extract_type: 'kakao_kr' }],
       }),
@@ -39,23 +52,23 @@ export async function generateKakaoPayLink(
 
   const data = (await res.json()) as {
     ok: boolean
-    jobs?: Array<{ id: string; status: string; result?: { pay_url?: string }; error?: { message?: string } }>
+    job_ids?: string[]
     error?: string
   }
 
-  if (!data.ok || !data.jobs?.[0]?.id) {
+  if (!data.ok || !data.job_ids?.[0]) {
     return { ok: false, error: data.error ?? '创建生成任务失败' }
   }
 
-  const jobId = data.jobs[0].id
+  const jobId = data.job_ids[0]
 
   // 2. Poll for completion (max 60s, every 2s)
   for (let i = 0; i < 30; i++) {
     await sleep(2000)
     let pollRes: Response
     try {
-      pollRes = await fetch(`${config.LINK_GEN_API_URL}/api/jobs`, {
-        headers: HEADERS,
+      pollRes = await fetch(`${cfg.apiUrl}/api/jobs`, {
+        headers: authHeaders,
       })
     } catch {
       continue

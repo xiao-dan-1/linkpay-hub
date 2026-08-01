@@ -1,4 +1,4 @@
-import { Building2, ExternalLink, Plus, RotateCcw, Save } from 'lucide-react'
+import { Building2, ExternalLink, Link, Plus, RotateCcw, Save, Settings } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createStudio, getDashboard, listStudios, rotateAccess, updateStudio } from '../../api/admin'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
@@ -16,6 +16,11 @@ export function AdminStudioPage() {
   const [feedback, setFeedback] = useState('')
   const [pendingRotate, setPendingRotate] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [configOpen, setConfigOpen] = useState<string | null>(null)
+  const [cfgApiUrl, setCfgApiUrl] = useState('')
+  const [cfgUsername, setCfgUsername] = useState('')
+  const [cfgPassword, setCfgPassword] = useState('')
+  const [savingConfig, setSavingConfig] = useState(false)
 
   const load = async () => {
     try {
@@ -30,7 +35,7 @@ export function AdminStudioPage() {
   const saveName = async (id: string) => {
     if (!editName.trim()) return
     try {
-      const u = await updateStudio(id, editName.trim())
+      const u = await updateStudio(id, { name: editName.trim() })
       setStudios(s => s.map(st => st.id === u.id ? u : st))
       setEditId(null); setFeedback('已保存')
     } catch (cause) { setFeedback(cause instanceof Error ? cause.message : '保存失败') }
@@ -59,6 +64,29 @@ export function AdminStudioPage() {
       setFeedback('已创建，入口链接已复制到剪贴板')
     } catch (cause) { setFeedback(cause instanceof Error ? cause.message : '创建失败') }
     finally { setCreating(false) }
+  }
+
+  const openConfig = (s: Studio) => {
+    setConfigOpen(s.id)
+    setCfgApiUrl(s.linkGenApiUrl ?? '')
+    setCfgUsername(s.linkGenUsername ?? '')
+    setCfgPassword('')
+  }
+
+  const saveConfig = async (id: string) => {
+    setSavingConfig(true)
+    try {
+      const u = await updateStudio(id, {
+        name: studios.find(s => s.id === id)?.name ?? '',
+        ...(cfgApiUrl !== undefined ? { linkGenApiUrl: cfgApiUrl } : {}),
+        ...(cfgUsername !== undefined ? { linkGenUsername: cfgUsername } : {}),
+        ...(cfgPassword !== undefined ? { linkGenPassword: cfgPassword } : {}),
+      })
+      setStudios(s => s.map(st => st.id === u.id ? u : st))
+      setConfigOpen(null)
+      setFeedback('接口配置已保存')
+    } catch (cause) { setFeedback(cause instanceof Error ? cause.message : '保存失败') }
+    finally { setSavingConfig(false) }
   }
 
   return (
@@ -90,6 +118,33 @@ export function AdminStudioPage() {
         </div>
       ) : null}
 
+      {/* 第三方接口配置弹窗 */}
+      {configOpen ? (
+        <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setConfigOpen(null) }}>
+          <div className="modal key-modal" role="dialog" aria-modal="true" aria-label="第三方接口配置">
+            <div className="key-modal-icon"><Settings size={22} /></div>
+            <h2>第三方接口配置</h2>
+            <p>配置 link.gpt007.org 等外部链接生成服务。</p>
+            <div className="key-create-form">
+              <label htmlFor="cfg-api-url">接口地址</label>
+              <input id="cfg-api-url" value={cfgApiUrl} onChange={e => setCfgApiUrl(e.target.value)} placeholder="https://link.gpt007.org" autoComplete="off" />
+            </div>
+            <div className="key-create-form">
+              <label htmlFor="cfg-username">用户名</label>
+              <input id="cfg-username" value={cfgUsername} onChange={e => setCfgUsername(e.target.value)} placeholder="linkadmin" autoComplete="off" />
+            </div>
+            <div className="key-create-form">
+              <label htmlFor="cfg-password">密码</label>
+              <input id="cfg-password" type="password" value={cfgPassword} onChange={e => setCfgPassword(e.target.value)} placeholder="留空则保持原密码不变" autoComplete="off" />
+            </div>
+            <div className="modal-actions">
+              <button className="button ghost" onClick={() => setConfigOpen(null)}>取消</button>
+              <button className="button" disabled={savingConfig} onClick={() => void saveConfig(configOpen)}><Save size={17} />{savingConfig ? '保存中…' : '保存配置'}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <section className="panel user-management-panel" style={{ padding: 18 }}>
         <h2 style={{ margin: '0 0 14px' }}>工作室列表</h2>
         <div className="user-table-wrap">
@@ -116,8 +171,9 @@ export function AdminStudioPage() {
                       </span>
                     ) : '—'}
                   </td>
-                  <td data-label="操作">
-                    <button className="button compact secondary" onClick={() => setPendingRotate(s.id)}><RotateCcw size={14} />轮换</button>
+                  <td data-label="操作" style={{ whiteSpace: 'nowrap' }}>
+                    <button className="button compact ghost" onClick={() => openConfig(s)}><Settings size={14} />配置</button>
+                    <button className="button compact secondary" style={{ marginLeft: 6 }} onClick={() => setPendingRotate(s.id)}><RotateCcw size={14} />轮换</button>
                   </td>
                 </tr>
               ))}

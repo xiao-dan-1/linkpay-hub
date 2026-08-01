@@ -7,6 +7,9 @@ export type Studio = {
   createdAt: string
   updatedAt: string
   entryUrl: string | null
+  linkGenApiUrl: string | null
+  linkGenUsername: string | null
+  linkGenPassword: string | null
 }
 
 export type User = {
