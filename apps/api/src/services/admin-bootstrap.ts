@@ -1,4 +1,4 @@
-import { adminLoginSchema } from '@studio/contracts'
+import { adminLoginSchema } from '@linkpay/contracts'
 import { prisma } from '../db.js'
 import { hashPassword } from '../lib/passwords.js'
 

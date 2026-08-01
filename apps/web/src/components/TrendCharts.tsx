@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { TrendPoint } from '@studio/contracts'
+import type { TrendPoint } from '@linkpay/contracts'
 
 interface TrendChartsProps {
   daily: TrendPoint[]

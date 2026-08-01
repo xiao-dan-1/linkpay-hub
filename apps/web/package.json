@@ -1,21 +1,21 @@
 {
-  "name": "@studio/web",
+  "name": "@linkpay/web",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "predev": "npm run build -w @studio/contracts",
+    "predev": "npm run build -w @linkpay/contracts",
     "dev": "vite --host 0.0.0.0",
-    "prebuild": "npm run build -w @studio/contracts",
+    "prebuild": "npm run build -w @linkpay/contracts",
     "build": "tsc --noEmit && vite build",
-    "pretypecheck": "npm run build -w @studio/contracts",
+    "pretypecheck": "npm run build -w @linkpay/contracts",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "pretest:run": "npm run build -w @studio/contracts",
+    "pretest:run": "npm run build -w @linkpay/contracts",
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@studio/contracts": "*",
+    "@linkpay/contracts": "*",
     "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

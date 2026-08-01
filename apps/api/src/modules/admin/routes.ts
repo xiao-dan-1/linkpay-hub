@@ -5,8 +5,8 @@ import {
   trendsQuerySchema,
   updateStudioSchema,
   updateUserEnabledSchema,
-} from '@studio/contracts'
-import type { SessionPrincipal } from '@studio/contracts'
+} from '@linkpay/contracts'
+import type { SessionPrincipal } from '@linkpay/contracts'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { AppError } from '../../lib/errors.js'

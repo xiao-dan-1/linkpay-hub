@@ -1,5 +1,5 @@
 {
-  "name": "studio-task-platform",
+  "name": "linkpay-hub",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -8,9 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @studio/web",
-    "dev:web": "npm run dev -w @studio/web",
-    "dev:api": "npm run dev -w @studio/api",
+    "dev": "npm run dev -w @linkpay/web",
+    "dev:web": "npm run dev -w @linkpay/web",
+    "dev:api": "npm run dev -w @linkpay/api",
     "build": "npm run build -ws --if-present",
     "test": "npm run test -ws --if-present",
     "test:run": "npm run test:run -ws --if-present",

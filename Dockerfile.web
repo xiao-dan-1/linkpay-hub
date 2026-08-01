@@ -10,8 +10,8 @@ RUN npm install \
 
 COPY packages/contracts packages/contracts
 COPY apps/web apps/web
-RUN npm run build -w @studio/contracts \
-  && npm run build -w @studio/web
+RUN npm run build -w @linkpay/contracts \
+  && npm run build -w @linkpay/web
 
 FROM nginx:1.27-alpine
 COPY infra/nginx/web.conf /etc/nginx/conf.d/default.conf

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { PropsWithChildren } from 'react'
-import type { SessionPrincipal } from '@studio/contracts'
+import type { SessionPrincipal } from '@linkpay/contracts'
 import * as authApi from '../api/auth'
 
 type UserPrincipal = SessionPrincipal & {

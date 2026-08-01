@@ -3,7 +3,7 @@ import type {
   CompleteTaskInput,
   CreateTaskChunkInput,
   TaskStatus,
-} from '@studio/contracts'
+} from '@linkpay/contracts'
 import { prisma } from '../../db.js'
 import { Prisma } from '../../generated/prisma/client.js'
 import { AppError, notFoundError } from '../../lib/errors.js'

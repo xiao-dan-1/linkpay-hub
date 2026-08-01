@@ -4,8 +4,8 @@ import {
   nextTaskResponseSchema,
   taskListSchema,
   taskSchema,
-} from '@studio/contracts'
-import type { Task as ApiTask, TaskStatus } from '@studio/contracts'
+} from '@linkpay/contracts'
+import type { Task as ApiTask, TaskStatus } from '@linkpay/contracts'
 import type { Task } from '../domain/models'
 import { apiRequest } from './client'
 

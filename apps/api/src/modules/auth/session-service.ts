@@ -1,4 +1,4 @@
-import type { SessionPrincipal } from '@studio/contracts'
+import type { SessionPrincipal } from '@linkpay/contracts'
 import type { FastifyReply } from 'fastify'
 import { config } from '../../config.js'
 import { prisma } from '../../db.js'

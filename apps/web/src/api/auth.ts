@@ -1,5 +1,5 @@
-import type { SessionPrincipal } from '@studio/contracts'
-import { sessionResponseSchema } from '@studio/contracts'
+import type { SessionPrincipal } from '@linkpay/contracts'
+import { sessionResponseSchema } from '@linkpay/contracts'
 import { apiRequest } from './client'
 
 function principal(response: unknown) {

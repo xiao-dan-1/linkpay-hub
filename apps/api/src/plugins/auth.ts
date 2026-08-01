@@ -1,4 +1,4 @@
-import type { SessionPrincipal } from '@studio/contracts'
+import type { SessionPrincipal } from '@linkpay/contracts'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { AppError } from '../lib/errors.js'
 import type { PrincipalType } from '../generated/prisma/enums.js'

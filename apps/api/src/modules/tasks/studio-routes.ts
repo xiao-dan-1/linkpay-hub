@@ -3,8 +3,8 @@ import {
   completeTaskSchema,
   paymentUrlSchema,
   taskListQuerySchema,
-} from '@studio/contracts'
-import type { SessionPrincipal } from '@studio/contracts'
+} from '@linkpay/contracts'
+import type { SessionPrincipal } from '@linkpay/contracts'
 import type { FastifyInstance } from 'fastify'
 import { AppError } from '../../lib/errors.js'
 import { taskService } from './task-service.js'

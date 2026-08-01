@@ -33,7 +33,7 @@ export function UserLoginPage() {
     <main className="auth-page">
       <section className="auth-brand-panel">
         <p className="eyebrow">STUDIO TASK FLOW</p>
-        <h1>任务工作台</h1>
+        <h1>LinkPay Hub</h1>
         <p>提交链接、查看排队进度，并实时获取工作室处理结果。</p>
         <div className="auth-feature-list">
           <span>按行自动识别任务</span>

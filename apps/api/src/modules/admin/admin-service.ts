@@ -1,4 +1,4 @@
-import type { TaskStatus } from '@studio/contracts'
+import type { TaskStatus } from '@linkpay/contracts'
 import { config } from '../../config.js'
 import { prisma } from '../../db.js'
 import type { Prisma } from '../../generated/prisma/client.js'

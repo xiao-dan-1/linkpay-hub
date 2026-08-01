@@ -9,8 +9,8 @@ import {
   taskSchema,
   trendsResponseSchema,
   userKeyRevealResponseSchema,
-} from '@studio/contracts'
-import type { TaskStatus, TrendsResponse } from '@studio/contracts'
+} from '@linkpay/contracts'
+import type { TaskStatus, TrendsResponse } from '@linkpay/contracts'
 import { z } from 'zod'
 import type { Studio, User } from '../domain/models'
 import { apiRequest } from './client'

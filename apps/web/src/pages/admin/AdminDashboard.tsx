@@ -6,7 +6,7 @@ import { TaskDetails } from '../../components/TaskDetails'
 import { TaskList } from '../../components/TaskList'
 import { TrendCharts } from '../../components/TrendCharts'
 import type { Task } from '../../domain/models'
-import type { TrendsResponse } from '@studio/contracts'
+import type { TrendsResponse } from '@linkpay/contracts'
 
 const emptyDashboard = { users: 0, tasks: 0, queued: 0, processing: 0, success: 0, failed: 0 }
 

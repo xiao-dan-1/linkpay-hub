@@ -1,7 +1,7 @@
 import {
   adminLoginSchema,
   userKeyLoginSchema,
-} from '@studio/contracts'
+} from '@linkpay/contracts'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { prisma } from '../../db.js'
 import { AppError } from '../../lib/errors.js'
