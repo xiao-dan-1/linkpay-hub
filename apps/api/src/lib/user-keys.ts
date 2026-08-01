@@ -64,9 +64,12 @@ export function decryptAccessKey(blob: string) {
 }
 
 export function maskUserAccessKey(user: UserKeyDisplay) {
-  return user.keyPrefix && user.keySuffix
-    ? `${user.keyPrefix}-••••-••••-${user.keySuffix}`
-    : '历史用户'
+  if (!user.keyPrefix || !user.keySuffix) return '历史用户'
+  // For short keys (< 12 chars), don't reveal partial segments
+  if (user.keyPrefix.length + user.keySuffix.length < 12) {
+    return '••••-••••-••••-••••'
+  }
+  return `${user.keyPrefix}-••••-••••-${user.keySuffix}`
 }
 
 export function taskUserLabel(user: UserIdentity) {

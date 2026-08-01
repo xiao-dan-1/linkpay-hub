@@ -43,7 +43,7 @@ export function UserLoginPage() {
         <form onSubmit={onSubmit} className="form-stack">
           <label>
             <span>访问密钥</span>
-            <div className="input-with-icon"><KeyRound size={17} /><input aria-label="访问密钥" value={accessKey} onChange={(event) => setAccessKey(event.target.value)} autoComplete="off" spellCheck={false} placeholder="USR-XXXX-XXXX-XXXX-XXXX" required /></div>
+            <div className="input-with-icon"><KeyRound size={17} /><input aria-label="访问密钥" value={accessKey} onChange={(event) => setAccessKey(event.target.value)} autoComplete="off" spellCheck={false} placeholder="输入访问密钥" required /></div>
           </label>
           {error ? <p className="form-error" role="alert">{error}</p> : null}
           <button className="button auth-submit" type="submit" disabled={submitting}>{submitting ? '正在登录…' : '进入工作台'} <ArrowRight size={17} /></button>
