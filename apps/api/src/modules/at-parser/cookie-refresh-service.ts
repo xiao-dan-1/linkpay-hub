@@ -1,15 +1,9 @@
 import { execFile } from 'node:child_process'
-import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
-import { config } from '../../config.js'
 
 const execFileAsync = promisify(execFile)
 
-// curl-impersonate mimics Chrome's TLS fingerprint to bypass Cloudflare
-const CURL_BIN = existsSync('/usr/local/bin/curl-chrome') ? '/usr/local/bin/curl-chrome' : 'curl'
-
 const CHATGPT_SESSION_URL = 'https://chatgpt.com/api/auth/session'
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
 export interface RefreshAccessTokenResult {
   ok: boolean
@@ -20,41 +14,39 @@ export interface RefreshAccessTokenResult {
 export async function refreshAccessTokenFromCookie(
   cookieSessionToken: string,
 ): Promise<RefreshAccessTokenResult> {
+  // Use Python urllib — its TLS fingerprint passes Cloudflare unlike curl/OpenSSL
+  const script = `
+import json, urllib.request, sys
+try:
+    req = urllib.request.Request('${CHATGPT_SESSION_URL}', headers={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+        'Cookie': '__Secure-next-auth.session-token=${cookieSessionToken.replace(/'/g, "'\\''")}',
+    })
+    resp = urllib.request.urlopen(req, timeout=15)
+    body = resp.read().decode()
+    data = json.loads(body)
+    at = data.get('accessToken')
+    if at:
+        print(json.dumps({'ok': True, 'accessToken': at}))
+    else:
+        print(json.dumps({'ok': False, 'error': 'no accessToken in response'}))
+except urllib.error.HTTPError as e:
+    print(json.dumps({'ok': False, 'error': f'ChatGPT HTTP {e.code}'}))
+except Exception as e:
+    print(json.dumps({'ok': False, 'error': str(e)[:200]}))
+`
+
   try {
-    const args = [
-      '-sS',
-      CHATGPT_SESSION_URL,
-      '-H', `User-Agent: ${UA}`,
-      '-H', 'Accept: application/json',
-      '-H', `Cookie: __Secure-next-auth.session-token=${cookieSessionToken}`,
-      '--max-time', '30',
-    ]
-
-    if (config.CHATGPT_PROXY) {
-      if (config.CHATGPT_PROXY.startsWith('socks5://') || config.CHATGPT_PROXY.startsWith('socks5h://')) {
-        args.push('--socks5-hostname', config.CHATGPT_PROXY.replace(/^socks5h?:\/\//, ''))
-      } else {
-        args.push('--proxy', config.CHATGPT_PROXY)
-      }
-    }
-
-    const { stdout } = await execFileAsync(CURL_BIN, args, {
-      timeout: 35000,
+    const { stdout } = await execFileAsync('python3', ['-c', script], {
+      timeout: 20000,
       maxBuffer: 1024 * 1024,
     })
 
-    const data = JSON.parse(stdout) as { accessToken?: string; sessionToken?: string }
-    if (!data.accessToken) {
-      return { ok: false, error: '响应中未包含 accessToken，session-token 可能已过期' }
-    }
-
-    return { ok: true, accessToken: data.accessToken }
+    const result = JSON.parse(stdout) as RefreshAccessTokenResult
+    return result
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : '未知错误'
-    const httpMatch = message.match(/HTTP (\d+)/)
-    if (httpMatch) {
-      return { ok: false, error: `ChatGPT 返回 HTTP ${httpMatch[1]}` }
-    }
     return { ok: false, error: `请求失败: ${message}` }
   }
 }
