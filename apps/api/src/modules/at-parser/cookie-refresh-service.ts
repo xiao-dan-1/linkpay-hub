@@ -27,7 +27,11 @@ export async function refreshAccessTokenFromCookie(
     ]
 
     if (config.CHATGPT_PROXY) {
-      args.push('--proxy', config.CHATGPT_PROXY)
+      if (config.CHATGPT_PROXY.startsWith('socks5://') || config.CHATGPT_PROXY.startsWith('socks5h://')) {
+        args.push('--socks5-hostname', config.CHATGPT_PROXY.replace(/^socks5h?:\/\//, ''))
+      } else {
+        args.push('--proxy', config.CHATGPT_PROXY)
+      }
     }
 
     const { stdout } = await execFileAsync('curl', args, {
