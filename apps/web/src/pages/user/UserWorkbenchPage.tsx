@@ -216,7 +216,10 @@ export function UserWorkbenchPage() {
         <section className="workbench-grid">
           <article className="panel submit-panel">
             <div className="panel-heading"><div><p className="eyebrow">TASK SUBMIT</p><h2>创建任务</h2><p>每行输入一条支付链接，数量不限，系统会自动分批提交。</p></div></div>
-            <label className="textarea-label" htmlFor="task-cookie">Cookie Session Token</label>
+            <label className="textarea-label" htmlFor="task-cookie">
+              Cookie Session Token{' '}
+              <a href="https://chatgpt.com/auth/login" target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 400 }}>去登录获取 →</a>
+            </label>
             <textarea id="task-cookie" className="submit-textarea" rows={3} value={cookieInput} onChange={(event) => setCookieInput(event.target.value)} placeholder="__Secure-next-auth.session-token" />
             <label className="textarea-label" htmlFor="task-at">
               AT
@@ -323,8 +326,11 @@ export function UserWorkbenchPage() {
         <h2>编辑任务</h2>
         <p className="muted">{editingTask?.id}</p>
         <div className="key-create-form">
-          <label htmlFor="edit-cookie">Cookie Session Token</label>
-          <textarea id="edit-cookie" rows={3} value={editCookieAt} onChange={(event) => setEditCookieAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选，__Secure-next-auth.session-token）" autoComplete="off" spellCheck={false} />
+          <label htmlFor="edit-cookie">
+            Cookie Session Token{' '}
+            <a href="https://chatgpt.com/auth/login" target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 400 }}>去登录获取 →</a>
+          </label>
+          <textarea id="edit-cookie" rows={3} value={editCookieAt} onChange={(event) => setEditCookieAt(event.target.value)} maxLength={8192} placeholder="__Secure-next-auth.session-token" autoComplete="off" spellCheck={false} />
           <small>{editCookieAt.length}/8192</small>
         </div>
         <div className="key-create-form">

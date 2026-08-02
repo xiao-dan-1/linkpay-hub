@@ -100,8 +100,11 @@ export function AdminTasksPage() {
           <small>{editAt.length}/8192</small>
         </div>
         <div className="key-create-form">
-          <label htmlFor="edit-cookie">Cookie Session Token</label>
-          <textarea id="edit-cookie" rows={3} value={editCookieAt} onChange={(event) => setEditCookieAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选，__Secure-next-auth.session-token）" autoComplete="off" spellCheck={false} />
+          <label htmlFor="edit-cookie">
+            Cookie Session Token{' '}
+            <a href="https://chatgpt.com/auth/login" target="_blank" rel="noreferrer" style={{ fontSize: 12, fontWeight: 400 }}>去登录获取 →</a>
+          </label>
+          <textarea id="edit-cookie" rows={3} value={editCookieAt} onChange={(event) => setEditCookieAt(event.target.value)} maxLength={8192} placeholder="__Secure-next-auth.session-token" autoComplete="off" spellCheck={false} />
           <small>{editCookieAt.length}/8192</small>
         </div>
         <div className="key-create-form">
