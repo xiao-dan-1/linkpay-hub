@@ -46,10 +46,12 @@ export async function updateAdminTask(
   publicId: string,
   url: string,
   at: string | undefined,
+  cookieAt: string | undefined,
   version: number,
 ) {
   const body: Record<string, unknown> = { url, version }
   if (at !== undefined) body.at = at
+  if (cookieAt !== undefined) body.cookieAt = cookieAt
   return toTask(taskSchema.parse(await apiRequest(
     `/api/v1/admin/tasks/${encodeURIComponent(publicId)}`,
     { method: 'PATCH', body },

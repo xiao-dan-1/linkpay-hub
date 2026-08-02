@@ -89,6 +89,7 @@ function apiTask(task: Task) {
     publicId: task.id,
     url: task.url,
     ...(task.at ? { at: task.at } : {}),
+    ...(task.cookieAt ? { cookieAt: task.cookieAt } : {}),
     status: task.status,
     queueSeq: task.queueSeq ?? '1',
     submittedAt: task.submittedAt,
@@ -146,6 +147,7 @@ export function installMockApi() {
         mockApiState.tasks.push({
           id: item.id, publicId: item.id, url: item.taskUrl,
           ...(typeof body.at === 'string' && body.at.trim() ? { at: body.at.trim() } : {}),
+          ...(typeof body.cookieAt === 'string' && body.cookieAt.trim() ? { cookieAt: body.cookieAt.trim() } : {}),
           status: 'queued',
           queueSeq: String(mockApiState.tasks.length + 1), submittedAt: new Date().toISOString(),
           version: 0, userLabel: '客户 A',
@@ -171,6 +173,7 @@ export function installMockApi() {
         if (task.status !== 'queued' && task.status !== 'failed') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中或失败的任务可以编辑', requestId: 'test-request' } }, 409)
         task.url = String(body.url)
         task.at = typeof body.at === 'string' ? body.at : undefined
+        task.cookieAt = typeof body.cookieAt === 'string' ? body.cookieAt : undefined
         const expired = task.status === 'queued' && new Date(task.submittedAt).getTime() + 15 * 60 * 1000 < Date.now()
         if (task.status === 'failed' || expired) {
           task.status = 'queued'
@@ -253,6 +256,7 @@ export function installMockApi() {
         if (task.status !== 'queued' && task.status !== 'failed') return json({ error: { code: 'TASK_NOT_EDITABLE', message: '只有排队中或失败的任务可以编辑', requestId: 'test-request' } }, 409)
         task.url = String(body.url)
         task.at = typeof body.at === 'string' ? body.at : undefined
+        task.cookieAt = typeof body.cookieAt === 'string' ? body.cookieAt : undefined
         const expired = task.status === 'queued' && new Date(task.submittedAt).getTime() + 15 * 60 * 1000 < Date.now()
         if (task.status === 'failed' || expired) {
           task.status = 'queued'
@@ -321,6 +325,12 @@ export function installMockApi() {
     }
     if (path.startsWith('/api/v1/admin/studios/') && method === 'PATCH') { mockApiState.studio.name = String(body.name); return json(mockApiState.studio) }
     if (path === '/api/v1/admin/audit-logs') return json({ items: [], page: { hasMore: false, nextCursor: null } })
+
+    if (path === '/api/v1/user/at/refresh' && method === 'POST') {
+      const cookieAt = body.cookieAt as string | undefined
+      if (!cookieAt?.trim()) return json({ ok: false, error: '缺少 session-token' }, 422)
+      return json({ ok: true, accessToken: 'eyJhbGciOiJSUzI1NiIsImtpZCI6Im1vY2sta2V5IiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2F1dGgub3BlbmFpLmNvbSIsInN1YiI6ImF1dGgwfG1vY2stdXNlciIsImF1ZCI6WyJodHRwczovL2FwaS5vcGVuYWkuY29tL3YxIl0sImlhdCI6MTc4NTYxODQ2MywiZXhwIjoxNzg2NDgyNDYzLCJqdGkiOiJtb2NrLWp0aS02NGJmNmVhMyIsImNoYXRncHRfcGxhbl90eXBlIjoiZnJlZSIsImNoYXRncHRfYWNjb3VudF9pZCI6Im1vY2stYWNjb3VudCJ9.mock-signature' })
+    }
 
     return json({ error: { code: 'NOT_FOUND', message: `No mock for ${method} ${path}`, requestId: 'test-request' } }, 404)
   }))

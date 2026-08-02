@@ -28,6 +28,7 @@ export type Task = {
   publicId?: string
   url: string
   at?: string
+  cookieAt?: string
   status: TaskStatus
   userId?: string
   studioId?: string

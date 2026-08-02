@@ -20,6 +20,7 @@ export function AdminTasksPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editUrl, setEditUrl] = useState('')
   const [editAt, setEditAt] = useState('')
+  const [editCookieAt, setEditCookieAt] = useState('')
   const [saving, setSaving] = useState(false)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [feedback, setFeedback] = useState('')
@@ -41,6 +42,7 @@ export function AdminTasksPage() {
     setEditingTask(task)
     setEditUrl(task.url)
     setEditAt(task.at ?? '')
+    setEditCookieAt(task.cookieAt ?? '')
   }
 
   const saveEdit = async () => {
@@ -51,6 +53,7 @@ export function AdminTasksPage() {
         editingTask.publicId!,
         editUrl.trim(),
         editAt.trim() || undefined,
+        editCookieAt.trim() || undefined,
         editingTask.version!,
       )
       setTasks((current) => current.map((t) => t.id === updated.id ? updated : t))
@@ -92,9 +95,14 @@ export function AdminTasksPage() {
         <h2>编辑任务</h2>
         <p className="muted">{editingTask?.id}</p>
         <div className="key-create-form">
-          <label htmlFor="edit-at">AT Token</label>
+          <label htmlFor="edit-at">AT</label>
           <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
           <small>{editAt.length}/8192</small>
+        </div>
+        <div className="key-create-form">
+          <label htmlFor="edit-cookie">Cookie Session Token</label>
+          <textarea id="edit-cookie" rows={3} value={editCookieAt} onChange={(event) => setEditCookieAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选，__Secure-next-auth.session-token）" autoComplete="off" spellCheck={false} />
+          <small>{editCookieAt.length}/8192</small>
         </div>
         <div className="key-create-form">
           <label htmlFor="edit-url">

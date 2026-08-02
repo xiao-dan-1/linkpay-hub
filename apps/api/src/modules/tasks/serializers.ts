@@ -22,6 +22,7 @@ export function serializeTask(task: TaskWithOptionalUser) {
     ...(task.completedAt ? { completedAt: task.completedAt.toISOString() } : {}),
     ...(task.feedback ? { feedback: task.feedback } : {}),
     ...(task.at ? { at: task.at } : {}),
+    ...(task.cookieAt ? { cookieAt: task.cookieAt } : {}),
     ...(task.user ? { userLabel: taskUserLabel(task.user) } : {}),
     version: task.version,
   }

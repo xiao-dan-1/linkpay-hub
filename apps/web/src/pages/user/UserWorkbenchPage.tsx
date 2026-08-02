@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { generatePayLink } from '../../api/at'
+import { generatePayLink, refreshAccessToken } from '../../api/at'
 import { deleteTask, listUserTasks, submitTasks, updateTask } from '../../api/tasks'
 import { useAuth } from '../../auth/AuthContext'
 import { AppShell } from '../../components/AppShell'
@@ -35,6 +35,7 @@ export function UserWorkbenchPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [rawInput, setRawInput] = useState('')
   const [atInput, setAtInput] = useState('')
+  const [cookieInput, setCookieInput] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
@@ -45,9 +46,11 @@ export function UserWorkbenchPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [editUrl, setEditUrl] = useState('')
   const [editAt, setEditAt] = useState('')
+  const [editCookieAt, setEditCookieAt] = useState('')
   const [saving, setSaving] = useState(false)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [generating, setGenerating] = useState(false)
+  const [refreshingAt, setRefreshingAt] = useState(false)
   const [creatingLink, setCreatingLink] = useState(false)
   const [linkProgress, setLinkProgress] = useState<{ current: number; total: number } | null>(null)
 
@@ -104,33 +107,46 @@ export function UserWorkbenchPage() {
     if (!canSubmit) return
     setSubmitting(true)
     try {
-      // pair URLs with ATs line by line
+      // pair URLs with ATs and cookieATs line by line
       const atLines = atInput.split(/\r?\n/).map(l => l.trim())
+      const cookieLines = cookieInput.split(/\r?\n/).map(l => l.trim())
       const urlLines = rawInput.split(/\r?\n/)
       const atByUrl: Map<string, string> = new Map()
+      const cookieByUrl: Map<string, string> = new Map()
       let urlIdx = 0
       for (const line of urlLines) {
         const url = line.trim()
         if (!url || !url.startsWith('http')) continue
         const at = atLines[urlIdx]?.trim()
         if (at) atByUrl.set(url, at)
+        const ck = cookieLines[urlIdx]?.trim()
+        if (ck) cookieByUrl.set(url, ck)
         urlIdx++
       }
 
-      // group URLs by AT
+      // group URLs by AT + cookieAt combo
       const groups: Map<string, string[]> = new Map()
+      const groupCookie: Map<string, string | undefined> = new Map()
       for (const url of parsed.valid) {
         const at = atByUrl.get(url) || ''
-        if (!groups.has(at)) groups.set(at, [])
-        groups.get(at)!.push(url)
+        const ck = cookieByUrl.get(url) || ''
+        const key = `${at}|${ck}`
+        if (!groups.has(key)) {
+          groups.set(key, [])
+          groupCookie.set(key, ck || undefined)
+        }
+        groups.get(key)!.push(url)
       }
 
       let totalCreated = 0
-      for (const [at, urls] of groups) {
-        totalCreated += (await submitTasks(urls, at || undefined)).length
+      for (const [key, urls] of groups) {
+        const at = key.split('|')[0]
+        const cookieAt = groupCookie.get(key)
+        totalCreated += (await submitTasks(urls, at || undefined, cookieAt)).length
       }
       setRawInput('')
       setAtInput('')
+      setCookieInput('')
       setFeedback(`已创建 ${totalCreated} 条任务`)
       await refreshTasks()
     } catch (cause) {
@@ -144,6 +160,7 @@ export function UserWorkbenchPage() {
     setEditingTask(task)
     setEditUrl(task.url)
     setEditAt(task.at ?? '')
+    setEditCookieAt(task.cookieAt ?? '')
   }
 
   const saveEdit = async () => {
@@ -154,6 +171,7 @@ export function UserWorkbenchPage() {
         editingTask.publicId!,
         editUrl.trim(),
         editAt.trim() || undefined,
+        editCookieAt.trim() || undefined,
         editingTask.version!,
       )
       setTasks((current) => current.map((t) => t.id === updated.id ? updated : t))
@@ -197,7 +215,27 @@ export function UserWorkbenchPage() {
         <section className="workbench-grid">
           <article className="panel submit-panel">
             <div className="panel-heading"><div><p className="eyebrow">TASK SUBMIT</p><h2>创建任务</h2><p>每行输入一条支付链接，数量不限，系统会自动分批提交。</p></div></div>
-            <label className="textarea-label" htmlFor="task-at">AT Token</label>
+            <label className="textarea-label" htmlFor="task-cookie">Cookie Session Token</label>
+            <textarea id="task-cookie" className="submit-textarea" rows={3} value={cookieInput} onChange={(event) => setCookieInput(event.target.value)} placeholder="__Secure-next-auth.session-token" />
+            <label className="textarea-label" htmlFor="task-at">
+              AT
+              <button className="button compact ghost" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', height: 26, visibility: cookieInput.trim() ? 'visible' : 'hidden' }} disabled={refreshingAt || !cookieInput.trim()} onClick={async () => {
+                setRefreshingAt(true)
+                try {
+                  const res = await refreshAccessToken(cookieInput.split(/\r?\n/)[0].trim())
+                  if (res.ok && res.accessToken) {
+                    setAtInput(res.accessToken)
+                    setFeedback('AT 已更新')
+                  } else {
+                    setFeedback(res.error || '刷新失败')
+                  }
+                } catch (e) {
+                  setFeedback(e instanceof Error ? e.message : '刷新失败')
+                } finally { setRefreshingAt(false) }
+              }}>
+                <RefreshCw size={11} />{refreshingAt ? '刷新中…' : '刷新 AT'}
+              </button>
+            </label>
             <textarea id="task-at" className="submit-textarea" rows={3} value={atInput} onChange={(event) => setAtInput(event.target.value)} placeholder="eyJhbGci...（每行一个，与链接一一对应）" />
             <label className="textarea-label" htmlFor="task-links">
               支付链接
@@ -247,6 +285,11 @@ export function UserWorkbenchPage() {
               if (info.email) return <span>关联: {info.email}</span>
               return <span>AT {atLines.length} 条</span>
             })() : null}
+            {cookieInput.trim() ? (() => {
+              const ckLines = cookieInput.split(/\r?\n/).filter(l => l.trim())
+              if (ckLines.length === 0) return null
+              return <span>Cookie {ckLines.length} 条</span>
+            })() : null}
           </div>
           {parsed.invalid.length ? <div className="invalid-links" role="alert">无效链接：{parsed.invalid.join('、')}</div> : null}
           <div className="submit-footer"><span>同次重复链接自动合并，超过 200 条将自动分批。</span><button className="button submit-button" disabled={!canSubmit} onClick={() => void onSubmit()}><Send size={17} />{submitLabel}</button></div>
@@ -279,7 +322,30 @@ export function UserWorkbenchPage() {
         <h2>编辑任务</h2>
         <p className="muted">{editingTask?.id}</p>
         <div className="key-create-form">
-          <label htmlFor="edit-at">AT Token</label>
+          <label htmlFor="edit-cookie">Cookie Session Token</label>
+          <textarea id="edit-cookie" rows={3} value={editCookieAt} onChange={(event) => setEditCookieAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选，__Secure-next-auth.session-token）" autoComplete="off" spellCheck={false} />
+          <small>{editCookieAt.length}/8192</small>
+        </div>
+        <div className="key-create-form">
+          <label htmlFor="edit-at">
+            AT
+            <button className="button compact ghost" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', height: 26, visibility: editCookieAt.trim() ? 'visible' : 'hidden' }} disabled={generating || !editCookieAt.trim()} onClick={async () => {
+              setGenerating(true)
+              try {
+                const res = await refreshAccessToken(editCookieAt.trim())
+                if (res.ok && res.accessToken) {
+                  setEditAt(res.accessToken)
+                  setFeedback('AT 已更新')
+                } else {
+                  setFeedback(res.error || '刷新失败')
+                }
+              } catch (e) {
+                setFeedback(e instanceof Error ? e.message : '刷新失败')
+              } finally { setGenerating(false) }
+            }}>
+              <RefreshCw size={11} />{generating ? '刷新中…' : '刷新 AT'}
+            </button>
+          </label>
           <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
           <small>{editAt.length}/8192</small>
         </div>

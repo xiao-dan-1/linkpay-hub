@@ -92,6 +92,7 @@ export const taskService = {
               userId,
               studioId,
               ...(input.at ? { at: input.at } : {}),
+              ...(input.cookieAt ? { cookieAt: input.cookieAt } : {}),
             },
           })
           // 顺序任务编号取自数据库自增序号：TASK-1、TASK-2…
@@ -205,6 +206,7 @@ export const taskService = {
       const data: Record<string, unknown> = {
         url: input.url,
         at: input.at ?? null,
+        cookieAt: input.cookieAt ?? null,
         version: { increment: 1 },
       }
       if (needsRequeue) {
@@ -406,7 +408,7 @@ export const taskService = {
   // 工作室直接创建任务（无需 batch/chunk）
   async createStudioTasks(
     studioId: string,
-    input: { urls: string[]; at?: string },
+    input: { urls: string[]; at?: string; cookieAt?: string },
   ) {
     const urls = [...new Set(input.urls)]
     if (urls.length === 0) return { taskPublicIds: [] as string[] }
@@ -422,6 +424,7 @@ export const taskService = {
             studioId,
             userId: '', // studio-created tasks have no user
             ...(input.at ? { at: input.at } : {}),
+            ...(input.cookieAt ? { cookieAt: input.cookieAt } : {}),
           },
         })
         const publicId = `TASK-${task.queueSeq}`

@@ -12,6 +12,7 @@ import { taskService } from './task-service.js'
 const createStudioTasksSchema = z.object({
   urls: z.array(paymentUrlSchema).min(1).max(200),
   at: z.string().trim().max(8192).optional(),
+  cookieAt: z.string().trim().max(8192).optional(),
 })
 
 function studioPrincipal(principal: SessionPrincipal | null) {

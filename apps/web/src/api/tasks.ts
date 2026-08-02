@@ -17,6 +17,7 @@ export function toTask(task: ApiTask): Task {
     publicId: task.publicId,
     url: task.url,
     at: task.at,
+    cookieAt: task.cookieAt,
     status: task.status,
     queueSeq: task.queueSeq,
     submittedAt: task.submittedAt,
@@ -36,7 +37,7 @@ function queryString(input: { status?: TaskStatus; search?: string; limit?: numb
   return query.toString()
 }
 
-export async function submitTasks(urls: string[], at?: string) {
+export async function submitTasks(urls: string[], at?: string, cookieAt?: string) {
   const batch = createTaskBatchResponseSchema.parse(await apiRequest('/api/v1/user/task-batches', {
     method: 'POST', body: { requestedCount: urls.length },
   }))
@@ -46,6 +47,7 @@ export async function submitTasks(urls: string[], at?: string) {
     idempotencyKey: crypto.randomUUID(),
     urls,
     ...(at?.trim() ? { at: at.trim() } : {}),
+    ...(cookieAt?.trim() ? { cookieAt: cookieAt.trim() } : {}),
   })
   for (let offset = 0; offset < urls.length; offset += CHUNK_SIZE) {
     const chunk = createTaskChunkResponseSchema.parse(await apiRequest(
@@ -99,10 +101,12 @@ export async function updateTask(
   publicId: string,
   url: string,
   at: string | undefined,
+  cookieAt: string | undefined,
   version: number,
 ) {
   const body: Record<string, unknown> = { url, version }
   if (at !== undefined) body.at = at
+  if (cookieAt !== undefined) body.cookieAt = cookieAt
   return toTask(taskSchema.parse(await apiRequest(
     `/api/v1/user/tasks/${encodeURIComponent(publicId)}`,
     { method: 'PATCH', body },

@@ -79,6 +79,7 @@ model Task {
   queueSeq            BigInt     @unique @default(autoincrement())
   url                 String
   at                  String?
+  cookieAt            String?
   status              TaskStatus @default(queued)
   userId              String
   studioId            String

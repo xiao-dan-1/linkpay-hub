@@ -47,3 +47,10 @@ export async function generatePayLink(at: string): Promise<{ ok: boolean; pay_ur
     body: { at },
   })
 }
+
+export async function refreshAccessToken(cookieAt: string): Promise<{ ok: boolean; accessToken?: string; error?: string }> {
+  return apiRequest('/api/v1/user/at/refresh', {
+    method: 'POST',
+    body: { cookieAt },
+  })
+}
