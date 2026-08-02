@@ -23,7 +23,7 @@ export async function refreshAccessTokenFromCookie(
       '-H', `User-Agent: ${UA}`,
       '-H', 'Accept: application/json',
       '-H', `Cookie: __Secure-next-auth.session-token=${cookieSessionToken}`,
-      '--max-time', '15',
+      '--max-time', '30',
     ]
 
     if (config.CHATGPT_PROXY) {
@@ -31,7 +31,7 @@ export async function refreshAccessTokenFromCookie(
     }
 
     const { stdout } = await execFileAsync('curl', args, {
-      timeout: 16000,
+      timeout: 35000,
       maxBuffer: 1024 * 1024,
     })
 
