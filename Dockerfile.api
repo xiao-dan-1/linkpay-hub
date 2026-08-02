@@ -24,7 +24,7 @@ FROM node:24-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl \
+  && apt-get install -y --no-install-recommends openssl curl \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd --system studio \
   && useradd --system --gid studio --create-home studio
