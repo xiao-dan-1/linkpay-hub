@@ -24,8 +24,10 @@ FROM node:24-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends openssl curl ca-certificates \
+  && apt-get install -y --no-install-recommends openssl ca-certificates wget \
   && rm -rf /var/lib/apt/lists/* \
+  && wget -qO /tmp/curl-imp.tar.gz https://github.com/lexiforest/curl-impersonate/releases/download/v0.9.3/curl-impersonate-v0.9.3.x86_64-linux-gnu.tar.gz || true \
+  && if [ -f /tmp/curl-imp.tar.gz ]; then tar xzf /tmp/curl-imp.tar.gz -C /usr/local/bin/ --strip-components=1 && rm /tmp/curl-imp.tar.gz && mv /usr/local/bin/curl_* /usr/local/bin/curl-chrome && chmod +x /usr/local/bin/curl-chrome; fi \
   && groupadd --system studio \
   && useradd --system --gid studio --create-home studio
 

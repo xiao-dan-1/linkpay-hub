@@ -1,8 +1,12 @@
 import { execFile } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { config } from '../../config.js'
 
 const execFileAsync = promisify(execFile)
+
+// curl-impersonate mimics Chrome's TLS fingerprint to bypass Cloudflare
+const CURL_BIN = existsSync('/usr/local/bin/curl-chrome') ? '/usr/local/bin/curl-chrome' : 'curl'
 
 const CHATGPT_SESSION_URL = 'https://chatgpt.com/api/auth/session'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -34,7 +38,7 @@ export async function refreshAccessTokenFromCookie(
       }
     }
 
-    const { stdout } = await execFileAsync('curl', args, {
+    const { stdout } = await execFileAsync(CURL_BIN, args, {
       timeout: 35000,
       maxBuffer: 1024 * 1024,
     })
