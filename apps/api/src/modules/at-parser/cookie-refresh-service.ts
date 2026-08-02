@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { config } from '../../config.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -16,14 +17,20 @@ export async function refreshAccessTokenFromCookie(
   cookieSessionToken: string,
 ): Promise<RefreshAccessTokenResult> {
   try {
-    const { stdout } = await execFileAsync('curl', [
+    const args = [
       '-sS',
       CHATGPT_SESSION_URL,
       '-H', `User-Agent: ${UA}`,
       '-H', 'Accept: application/json',
       '-H', `Cookie: __Secure-next-auth.session-token=${cookieSessionToken}`,
       '--max-time', '15',
-    ], {
+    ]
+
+    if (config.CHATGPT_PROXY) {
+      args.push('--proxy', config.CHATGPT_PROXY)
+    }
+
+    const { stdout } = await execFileAsync('curl', args, {
       timeout: 16000,
       maxBuffer: 1024 * 1024,
     })
@@ -36,7 +43,6 @@ export async function refreshAccessTokenFromCookie(
     return { ok: true, accessToken: data.accessToken }
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : '未知错误'
-    // Try to extract HTTP status from curl error
     const httpMatch = message.match(/HTTP (\d+)/)
     if (httpMatch) {
       return { ok: false, error: `ChatGPT 返回 HTTP ${httpMatch[1]}` }

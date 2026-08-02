@@ -13,6 +13,7 @@ const configSchema = z.object({
   LINK_GEN_API_URL: z.string().url().default('https://link.gpt007.org'),
   LINK_GEN_USERNAME: z.string().default('linkadmin'),
   LINK_GEN_PASSWORD: z.string().default(''),
+  CHATGPT_PROXY: z.string().optional(),
 })
 
 export const config = configSchema.parse(process.env)
