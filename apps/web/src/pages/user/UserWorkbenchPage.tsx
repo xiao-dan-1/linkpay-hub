@@ -50,6 +50,7 @@ export function UserWorkbenchPage() {
   const [saving, setSaving] = useState(false)
   const [deletingTask, setDeletingTask] = useState<Task | null>(null)
   const [generating, setGenerating] = useState(false)
+  const [refreshingAtEdit, setRefreshingAtEdit] = useState(false)
   const [refreshingAt, setRefreshingAt] = useState(false)
   const [creatingLink, setCreatingLink] = useState(false)
   const [linkProgress, setLinkProgress] = useState<{ current: number; total: number } | null>(null)
@@ -329,8 +330,8 @@ export function UserWorkbenchPage() {
         <div className="key-create-form">
           <label htmlFor="edit-at">
             AT
-            <button className="button compact ghost" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', height: 26, visibility: editCookieAt.trim() ? 'visible' : 'hidden' }} disabled={generating || !editCookieAt.trim()} onClick={async () => {
-              setGenerating(true)
+            <button className="button compact ghost" style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', height: 26, visibility: editCookieAt.trim() ? 'visible' : 'hidden' }} disabled={refreshingAtEdit || !editCookieAt.trim()} onClick={async () => {
+              setRefreshingAtEdit(true)
               try {
                 const res = await refreshAccessToken(editCookieAt.trim())
                 if (res.ok && res.accessToken) {
@@ -341,9 +342,9 @@ export function UserWorkbenchPage() {
                 }
               } catch (e) {
                 setFeedback(e instanceof Error ? e.message : '刷新失败')
-              } finally { setGenerating(false) }
+              } finally { setRefreshingAtEdit(false) }
             }}>
-              <RefreshCw size={11} />{generating ? '刷新中…' : '刷新 AT'}
+              <RefreshCw size={11} />{refreshingAtEdit ? '刷新中…' : '刷新 AT'}
             </button>
           </label>
           <textarea id="edit-at" rows={3} data-autofocus value={editAt} onChange={(event) => setEditAt(event.target.value)} maxLength={8192} placeholder="eyJhbGci…（可选）" autoComplete="off" spellCheck={false} />
