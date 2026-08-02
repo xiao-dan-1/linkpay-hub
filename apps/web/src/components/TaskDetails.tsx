@@ -1,5 +1,6 @@
+import QRCode from 'qrcode'
 import { Activity, ExternalLink, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { AtCheckResult } from '../api/at'
 import { checkAt } from '../api/at'
@@ -20,6 +21,8 @@ export function TaskDetails({
   const [toastMsg, setToastMsg] = useState('')
   const [loading, setLoading] = useState(false)
   const [atModal, setAtModal] = useState<AtModalData | null>(null)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [qrError, setQrError] = useState(false)
 
   useEffect(() => {
     if (!task) return
@@ -28,6 +31,21 @@ export function TaskDetails({
     document.addEventListener('keydown', l)
     return () => { document.removeEventListener('keydown', l); document.body.style.overflow = '' }
   }, [task?.id])
+
+  const generateQr = useCallback(async (url: string) => {
+    setQrError(false)
+    setQrDataUrl(null)
+    try {
+      const dataUrl = await QRCode.toDataURL(url, { width: 280, margin: 1 })
+      setQrDataUrl(dataUrl)
+    } catch {
+      setQrError(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (task?.url) { void generateQr(task.url) }
+  }, [task?.url, generateQr])
 
   const handleCheck = async () => {
     if (!task?.at) return
@@ -68,7 +86,13 @@ export function TaskDetails({
             <div className="td-card-body">
               <a href={task.url} target="_blank" rel="noreferrer" className="td-card-url">{task.url}<ExternalLink size={13} /></a>
             </div>
-            <img className="td-card-qr" src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(task.url)}`} alt="二维码" />
+            {qrError ? (
+              <div className="td-card-qr td-card-qr-fallback">二维码生成失败</div>
+            ) : qrDataUrl ? (
+              <img className="td-card-qr" src={qrDataUrl} alt="二维码" />
+            ) : (
+              <div className="td-card-qr td-card-qr-loading" />
+            )}
           </div>
 
           {/* info rows */}
